@@ -1,0 +1,1529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chart Compass · Your Astrological Guide</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Lato:ital,wght@0,300;0,400;0,700;1,300;1,400&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #07071a;
+  --surface: #0f0f28;
+  --card: #16163a;
+  --card-hover: #1e1e4a;
+  --gold: #c9a227;
+  --gold-dim: #7a6018;
+  --gold-light: #f0d060;
+  --purple: #8b7fff;
+  --blue: #4fc3f7;
+  --teal: #26c6da;
+  --red-soft: #ff9080;
+  --text: #ddd0b8;
+  --text-bright: #f2eada;
+  --text-muted: #6a6a90;
+  --border: rgba(201,162,39,0.13);
+  --border-active: rgba(201,162,39,0.45);
+  --radius: 12px;
+}
+
+html, body { height: 100%; overflow: hidden; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Lato', sans-serif;
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+/* Stars */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    radial-gradient(1px 1px at 15% 25%, rgba(255,255,255,0.45) 0%, transparent 100%),
+    radial-gradient(1px 1px at 75% 8%,  rgba(255,255,255,0.3)  0%, transparent 100%),
+    radial-gradient(1px 1px at 38% 62%, rgba(255,255,255,0.38) 0%, transparent 100%),
+    radial-gradient(1px 1px at 67% 78%, rgba(255,255,255,0.22) 0%, transparent 100%),
+    radial-gradient(1px 1px at 9%  88%, rgba(255,255,255,0.32) 0%, transparent 100%),
+    radial-gradient(2px 2px at 58% 42%, rgba(255,255,255,0.12) 0%, transparent 100%),
+    radial-gradient(1px 1px at 88% 52%, rgba(255,255,255,0.28) 0%, transparent 100%),
+    radial-gradient(1px 1px at 28% 12%, rgba(255,255,255,0.32) 0%, transparent 100%),
+    radial-gradient(1px 1px at 52% 72%, rgba(255,255,255,0.18) 0%, transparent 100%),
+    radial-gradient(1px 1px at 82% 32%, rgba(255,255,255,0.32) 0%, transparent 100%),
+    radial-gradient(1px 1px at 44% 5%,  rgba(255,255,255,0.25) 0%, transparent 100%),
+    radial-gradient(1px 1px at 3%  48%, rgba(255,255,255,0.2)  0%, transparent 100%),
+    radial-gradient(1px 1px at 95% 20%, rgba(255,255,255,0.28) 0%, transparent 100%),
+    radial-gradient(1px 1px at 22% 95%, rgba(255,255,255,0.22) 0%, transparent 100%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* SETUP MODAL */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(7,7,26,0.95);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(10px);
+}
+
+.modal {
+  background: var(--card);
+  border: 1px solid var(--border-active);
+  border-radius: 16px;
+  padding: 44px 40px;
+  max-width: 440px;
+  width: 92%;
+  text-align: center;
+  box-shadow: 0 0 80px rgba(201,162,39,0.08);
+}
+
+.modal-glyph {
+  font-size: 2.8rem;
+  color: var(--gold);
+  opacity: 0.7;
+  margin-bottom: 16px;
+}
+
+.modal h2 {
+  font-family: 'Cinzel', serif;
+  color: var(--gold);
+  font-size: 1.5rem;
+  letter-spacing: 0.06em;
+  margin-bottom: 6px;
+}
+
+.modal-sub {
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  margin-bottom: 28px;
+  line-height: 1.65;
+}
+
+.modal input {
+  width: 100%;
+  padding: 13px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 0.875rem;
+  font-family: monospace;
+  margin-bottom: 10px;
+  transition: border-color 0.2s;
+}
+
+.modal input:focus { outline: none; border-color: var(--gold-dim); }
+
+.key-note {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  margin-bottom: 22px;
+  line-height: 1.5;
+}
+
+/* BUTTONS */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 11px 22px;
+  border-radius: 9px;
+  border: none;
+  font-size: 0.875rem;
+  font-family: 'Lato', sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: all 0.18s;
+}
+
+.btn-primary { background: var(--gold); color: #07071a; width: 100%; }
+.btn-primary:hover { background: var(--gold-light); }
+.btn-ghost {
+  background: transparent;
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  padding: 7px 14px;
+  font-size: 0.78rem;
+}
+.btn-ghost:hover { border-color: var(--gold-dim); color: var(--text); }
+
+/* LAYOUT */
+.app {
+  display: grid;
+  grid-template-rows: 58px 1fr;
+  grid-template-columns: 272px 1fr;
+  height: 100vh;
+  position: relative;
+  z-index: 1;
+}
+
+/* HEADER */
+header {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 22px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(7,7,26,0.85);
+  backdrop-filter: blur(14px);
+  z-index: 10;
+}
+
+.h-left { display: flex; align-items: center; gap: 12px; }
+
+.h-orb {
+  width: 34px; height: 34px;
+  border: 1px solid var(--gold-dim);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--gold);
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.h-title {
+  font-family: 'Cinzel', serif;
+  font-size: 0.95rem;
+  color: var(--gold);
+  letter-spacing: 0.07em;
+}
+
+.h-sub { font-size: 0.72rem; color: var(--text-muted); }
+
+.h-right { display: flex; align-items: center; gap: 10px; }
+
+.date-chip {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  padding: 4px 11px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+}
+
+/* SIDEBAR */
+.sidebar {
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.sb-section {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.sb-label {
+  font-family: 'Cinzel', serif;
+  font-size: 0.6rem;
+  color: var(--gold-dim);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+
+/* MODES */
+.mode-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 5px;
+}
+
+.mode-btn {
+  padding: 7px 4px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-muted);
+  font-size: 0.68rem;
+  font-family: 'Lato', sans-serif;
+  cursor: pointer;
+  transition: all 0.18s;
+  text-align: center;
+  line-height: 1.35;
+}
+
+.mode-btn:hover { border-color: var(--gold-dim); color: var(--text); }
+.mode-btn.active { border-color: var(--gold); color: var(--gold); background: rgba(201,162,39,0.07); }
+.mode-icon { display: block; font-size: 1rem; margin-bottom: 2px; }
+
+/* PLANET LIST */
+.sb-scroll { flex: 1; overflow-y: auto; }
+.sb-scroll::-webkit-scrollbar { width: 3px; }
+.sb-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+.planet-list { display: flex; flex-direction: column; gap: 3px; }
+.prow { display: flex; justify-content: space-between; font-size: 0.72rem; padding: 1px 0; }
+.pname { color: var(--gold-dim); font-weight: 700; width: 72px; }
+.ppos { color: var(--text-muted); }
+
+.sb-settings { padding: 12px 16px; border-top: 1px solid var(--border); flex-shrink: 0; }
+.sb-row { display: flex; justify-content: space-between; align-items: center; font-size: 0.72rem; color: var(--text-muted); margin-bottom: 6px; }
+.sb-row:last-child { margin-bottom: 0; }
+.sb-row button {
+  background: none; border: 1px solid var(--border); color: var(--text-muted);
+  padding: 2px 8px; border-radius: 4px; font-size: 0.68rem; cursor: pointer;
+  font-family: 'Lato', sans-serif;
+}
+.sb-row button:hover { border-color: var(--gold-dim); color: var(--text); }
+
+/* MAIN */
+.main {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: rgba(7,7,26,0.3);
+}
+
+/* TABS */
+.tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  background: rgba(7,7,26,0.5);
+  flex-shrink: 0;
+}
+
+.tab {
+  padding: 12px 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.18s;
+  letter-spacing: 0.03em;
+  user-select: none;
+}
+
+.tab:hover { color: var(--text); }
+.tab.active { color: var(--gold); border-bottom-color: var(--gold); }
+
+/* TAB CONTENT */
+.tab-pane { flex: 1; display: none; flex-direction: column; overflow: hidden; }
+.tab-pane.active { display: flex; }
+
+/* CONVERSATION */
+.convo {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.convo::-webkit-scrollbar { width: 4px; }
+.convo::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+/* WELCOME */
+.welcome {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 12px;
+  padding: 40px;
+  color: var(--text-muted);
+}
+
+.welcome-orb { font-size: 3rem; opacity: 0.5; color: var(--gold); }
+.welcome h3 { font-family: 'Cinzel', serif; color: var(--text-muted); font-size: 1rem; letter-spacing: 0.05em; }
+.welcome p { font-size: 0.82rem; max-width: 340px; line-height: 1.65; }
+
+/* MESSAGES */
+.msg { max-width: 82%; animation: fadeUp 0.28s ease; }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+.msg.user { align-self: flex-end; }
+.msg.assistant { align-self: flex-start; }
+
+.bubble {
+  padding: 13px 17px;
+  border-radius: 16px;
+  font-size: 0.875rem;
+  line-height: 1.72;
+}
+
+.msg.user .bubble {
+  background: rgba(201,162,39,0.1);
+  border: 1px solid rgba(201,162,39,0.22);
+  border-bottom-right-radius: 3px;
+  color: var(--text-bright);
+}
+
+.msg.assistant .bubble {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-bottom-left-radius: 3px;
+  color: var(--text);
+}
+
+.msg-meta { font-size: 0.68rem; color: var(--text-muted); margin-top: 4px; padding: 0 4px; }
+.msg.user .msg-meta { text-align: right; }
+
+/* TYPING */
+.typing {
+  align-self: flex-start;
+  display: flex;
+  gap: 5px;
+  padding: 14px 18px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  border-bottom-left-radius: 3px;
+}
+
+.dot {
+  width: 6px; height: 6px;
+  background: var(--text-muted);
+  border-radius: 50%;
+  animation: bounce 1.4s infinite ease-in-out;
+}
+.dot:nth-child(1) { animation-delay: 0s; }
+.dot:nth-child(2) { animation-delay: 0.2s; }
+.dot:nth-child(3) { animation-delay: 0.4s; }
+@keyframes bounce { 0%,60%,100% { transform: translateY(0); opacity: 0.4; } 30% { transform: translateY(-7px); opacity: 1; } }
+
+/* ERROR */
+.err-msg {
+  align-self: center;
+  background: rgba(255,80,60,0.07);
+  border: 1px solid rgba(255,80,60,0.2);
+  border-radius: 8px;
+  padding: 10px 16px;
+  font-size: 0.8rem;
+  color: #ff9080;
+  max-width: 80%;
+}
+
+/* STARTERS */
+.starters {
+  display: flex;
+  gap: 7px;
+  padding: 0 28px 14px;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+
+.starter {
+  padding: 6px 13px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  font-size: 0.76rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.18s;
+  user-select: none;
+}
+
+.starter:hover { border-color: var(--gold-dim); color: var(--text); }
+
+/* INPUT */
+.input-area {
+  padding: 14px 22px 16px;
+  border-top: 1px solid var(--border);
+  background: rgba(7,7,26,0.5);
+  flex-shrink: 0;
+}
+
+.input-row { display: flex; gap: 9px; align-items: flex-end; }
+
+textarea.input-box {
+  flex: 1;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 15px;
+  color: var(--text);
+  font-size: 0.875rem;
+  font-family: 'Lato', sans-serif;
+  resize: none;
+  min-height: 46px;
+  max-height: 140px;
+  line-height: 1.5;
+  transition: border-color 0.18s;
+}
+
+textarea.input-box:focus { outline: none; border-color: var(--gold-dim); }
+textarea.input-box::placeholder { color: var(--text-muted); }
+
+.send-btn {
+  width: 46px; height: 46px;
+  background: var(--gold);
+  border: none;
+  border-radius: 12px;
+  color: #07071a;
+  font-size: 1.2rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.18s;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.send-btn:hover { background: var(--gold-light); }
+.send-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+/* JOURNAL TAB */
+.journal-wrap { flex: 1; overflow-y: auto; padding: 24px 28px; }
+.journal-wrap::-webkit-scrollbar { width: 4px; }
+.journal-wrap::-webkit-scrollbar-thumb { background: var(--border); }
+
+.j-form {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-bottom: 24px;
+}
+
+.j-form-label { font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 11px; }
+
+.type-chips { display: flex; gap: 7px; flex-wrap: wrap; margin-bottom: 13px; }
+
+.chip {
+  padding: 5px 13px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  font-size: 0.73rem;
+  cursor: pointer;
+  transition: all 0.18s;
+  color: var(--text-muted);
+  background: transparent;
+  font-family: 'Lato', sans-serif;
+}
+
+.chip.active { background: rgba(201,162,39,0.1); border-color: var(--gold); color: var(--gold); }
+
+.j-textarea {
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 14px;
+  color: var(--text);
+  font-size: 0.875rem;
+  font-family: 'Lato', sans-serif;
+  resize: vertical;
+  min-height: 80px;
+  line-height: 1.65;
+  margin-bottom: 12px;
+}
+
+.j-textarea:focus { outline: none; border-color: var(--gold-dim); }
+
+.j-entries { display: flex; flex-direction: column; gap: 10px; }
+
+.j-entry {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 15px;
+}
+
+.j-entry-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.j-type-badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  padding: 3px 10px;
+  border-radius: 20px;
+}
+
+.badge-milestone { background: rgba(79,195,247,0.1);  color: var(--blue);     border: 1px solid rgba(79,195,247,0.2);  }
+.badge-celebration { background: rgba(201,162,39,0.1); color: var(--gold);     border: 1px solid rgba(201,162,39,0.2);  }
+.badge-insight { background: rgba(38,198,218,0.1);    color: var(--teal);     border: 1px solid rgba(38,198,218,0.2);  }
+.badge-doubt { background: rgba(139,127,255,0.1);     color: var(--purple);   border: 1px solid rgba(139,127,255,0.2); }
+.badge-intention { background: rgba(255,144,128,0.1); color: var(--red-soft); border: 1px solid rgba(255,144,128,0.2); }
+
+.j-date { font-size: 0.68rem; color: var(--text-muted); }
+.j-text { font-size: 0.855rem; line-height: 1.65; color: var(--text); }
+
+/* BOOK TAB */
+.book-wrap { flex: 1; overflow-y: auto; padding: 24px 28px; }
+.book-wrap::-webkit-scrollbar { width: 4px; }
+.book-wrap::-webkit-scrollbar-thumb { background: var(--border); }
+
+.book-header {
+  text-align: center;
+  padding-bottom: 28px;
+}
+
+.book-header h3 {
+  font-family: 'Cinzel', serif;
+  color: var(--gold);
+  font-size: 1.1rem;
+  letter-spacing: 0.06em;
+  margin-bottom: 5px;
+}
+
+.book-header p { font-size: 0.78rem; color: var(--text-muted); }
+
+.book-empty { text-align: center; color: var(--text-muted); font-size: 0.83rem; padding: 30px 0; }
+
+.chapter {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-bottom: 12px;
+  overflow: hidden;
+}
+
+.chapter-head {
+  padding: 14px 18px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  cursor: pointer;
+  transition: background 0.18s;
+  gap: 12px;
+}
+
+.chapter-head:hover { background: var(--card-hover); }
+
+.chapter-title { font-size: 0.855rem; color: var(--text); font-weight: 600; line-height: 1.4; }
+.chapter-meta { font-size: 0.68rem; color: var(--text-muted); margin-top: 2px; }
+.chapter-arrow { color: var(--text-muted); font-size: 0.75rem; flex-shrink: 0; margin-top: 2px; }
+
+.chapter-body { padding: 0 18px; max-height: 0; overflow: hidden; transition: max-height 0.28s ease, padding 0.28s; }
+.chapter-body.open { max-height: 2000px; padding: 4px 18px 16px; }
+
+.ch-msg {
+  font-size: 0.8rem;
+  line-height: 1.65;
+  color: var(--text-muted);
+  margin-bottom: 9px;
+  padding-left: 10px;
+  border-left: 2px solid var(--border);
+}
+
+.ch-msg.assistant { border-left-color: var(--gold-dim); color: var(--text); }
+.ch-msg strong { color: var(--text-muted); font-size: 0.68rem; display: block; margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.06em; }
+.ch-msg.assistant strong { color: var(--gold-dim); }
+
+/* MODE COLOR ACCENTS */
+.mode-reflect  { --mode-c: var(--blue); }
+.mode-question { --mode-c: var(--teal); }
+.mode-doubt    { --mode-c: var(--purple); }
+.mode-celebrate { --mode-c: var(--gold); }
+.mode-transit  { --mode-c: #a0c4ff; }
+.mode-milestone { --mode-c: var(--red-soft); }
+
+/* RESPONSIVE */
+@media (max-width: 680px) {
+  .app { grid-template-columns: 1fr; }
+  .sidebar { display: none; }
+}
+
+/* Onboarding */
+.birth-row { display: flex; gap: 8px; }
+.birth-row input { flex: 1; min-width: 0; }
+#cityResults { text-align: left; max-height: 160px; overflow: auto; margin-top: -4px; }
+.city-row { padding: 8px 10px; cursor: pointer; border-radius: 6px; font-size: 0.85rem; opacity: 0.85; }
+.city-row:hover { background: rgba(200,170,110,0.12); }
+</style>
+</head>
+<body>
+
+<!-- SETUP MODAL -->
+<div class="overlay" id="setupOverlay">
+  <div class="modal">
+    <div class="modal-glyph">✦</div>
+    <h2>Chart Compass</h2>
+    <div id="stepBirth">
+      <p class="modal-sub">Your natal chart, alive in conversation.<br>It begins with the sky you were born under.</p>
+      <input type="text" id="bName" placeholder="Your first name" autocomplete="off">
+      <div class="birth-row">
+        <input type="date" id="bDate">
+        <input type="time" id="bTime">
+      </div>
+      <input type="text" id="bCity" placeholder="Birth city — start typing…" autocomplete="off" oninput="onCityInput()">
+      <div id="cityResults"></div>
+      <p class="key-note">Exact birth time matters — houses shift every few minutes.<br>If unknown, use 12:00 and hold house placements loosely.</p>
+      <button class="btn btn-primary" id="createBtn" onclick="onCreateChart()">Calculate my chart →</button>
+      <p class="key-note" id="birthErr" style="color:#e08585;"></p>
+    </div>
+    <div id="stepKey" style="display:none;">
+      <p class="modal-sub" id="chartHello"></p>
+      <input type="password" id="keyInput" placeholder="sk-ant-api03-..." autocomplete="off">
+      <p class="key-note">This trial runs on an Anthropic API key — yours, or one your host shared with you.<br>It stays in this browser only. No server receives it.</p>
+      <button class="btn btn-primary" onclick="onSaveKey()">Open the Compass →</button>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div class="app" id="app" style="display:none;">
+
+  <header>
+    <div class="h-left">
+      <div class="h-orb">✦</div>
+      <div>
+        <div class="h-title">Chart Compass</div>
+        <div class="h-sub" id="chartSummary">Your natal chart, alive in conversation</div>
+      </div>
+    </div>
+    <div class="h-right">
+      <div class="date-chip" id="dateBadge"></div>
+      <button class="btn btn-ghost" onclick="newSession()">+ New Session</button>
+    </div>
+  </header>
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sb-section">
+      <div class="sb-label">Mode</div>
+      <div class="mode-grid">
+        <button class="mode-btn active" data-mode="reflect"   onclick="setMode(this)"><span class="mode-icon">◯</span>Reflect</button>
+        <button class="mode-btn"        data-mode="question"  onclick="setMode(this)"><span class="mode-icon">?</span>Question</button>
+        <button class="mode-btn"        data-mode="doubt"     onclick="setMode(this)"><span class="mode-icon">~</span>Doubt</button>
+        <button class="mode-btn"        data-mode="celebrate" onclick="setMode(this)"><span class="mode-icon">✦</span>Celebrate</button>
+        <button class="mode-btn"        data-mode="transit"   onclick="setMode(this)"><span class="mode-icon">☽</span>Transits</button>
+        <button class="mode-btn"        data-mode="milestone" onclick="setMode(this)"><span class="mode-icon">△</span>Milestone</button>
+      </div>
+    </div>
+
+    <div class="sb-scroll">
+      <div class="sb-section">
+        <div class="sb-label" id="natalLabel">Natal Chart</div>
+        <div class="planet-list" id="natalList"></div>
+      </div>
+
+      <div class="sb-section">
+        <div class="sb-label">Current Sky · Live</div>
+        <div class="planet-list" id="skyList">
+          <div class="prow"><span class="pname">Calculating…</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sb-settings">
+      <div class="sb-row"><span>Birth Data</span> <button onclick="onResetChart()">Change</button></div>
+      <div class="sb-row"><span>API Key</span>  <button onclick="onResetKey()">Change</button></div>
+      <div class="sb-row"><span>Sessions</span> <button onclick="onClearSessions()">Clear all</button></div>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+
+    <div class="tabs">
+      <div class="tab active" onclick="switchTab('compass', this)">Compass</div>
+      <div class="tab"        onclick="switchTab('journal', this)">Journal</div>
+      <div class="tab"        onclick="switchTab('book',    this)">The Book</div>
+    </div>
+
+    <!-- COMPASS -->
+    <div class="tab-pane active" id="pane-compass">
+      <div class="convo" id="convo">
+        <div class="welcome" id="welcome">
+          <div class="welcome-orb">✦</div>
+          <h3>What brings you here today?</h3>
+          <p>Choose a mode on the left, pick a prompt below, or just start typing. This is your space.</p>
+        </div>
+      </div>
+      <div class="starters" id="starters"></div>
+      <div class="input-area">
+        <div class="input-row">
+          <textarea class="input-box" id="inputBox" placeholder="Say anything..." rows="1"
+            onkeydown="onKey(event)" oninput="autoGrow(this)"></textarea>
+          <button class="send-btn" id="sendBtn" onclick="send()">→</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- JOURNAL -->
+    <div class="tab-pane" id="pane-journal">
+      <div class="journal-wrap">
+        <div class="j-form">
+          <div class="j-form-label">New Entry</div>
+          <div class="type-chips">
+            <button class="chip active" data-type="milestone"   onclick="pickType(this)">Milestone</button>
+            <button class="chip"        data-type="celebration" onclick="pickType(this)">Celebration</button>
+            <button class="chip"        data-type="insight"     onclick="pickType(this)">Insight</button>
+            <button class="chip"        data-type="doubt"       onclick="pickType(this)">Doubt</button>
+            <button class="chip"        data-type="intention"   onclick="pickType(this)">Intention</button>
+          </div>
+          <textarea class="j-textarea" id="jText" placeholder="What's alive in you right now?"></textarea>
+          <button class="btn btn-primary" style="max-width:150px;font-size:0.82rem;padding:9px 16px;" onclick="saveEntry()">Save Entry</button>
+        </div>
+        <div class="j-entries" id="jEntries"></div>
+      </div>
+    </div>
+
+    <!-- BOOK -->
+    <div class="tab-pane" id="pane-book">
+      <div class="book-wrap">
+        <div class="book-header">
+          <h3>The Living Book</h3>
+          <p>Every session is a chapter. Your story, freshly written.</p>
+        </div>
+        <div id="bookChapters"></div>
+      </div>
+    </div>
+
+
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/astronomy-engine@2/astronomy.browser.min.js"></script>
+<script>
+// ─── PROFILE / NATAL ENGINE ───────────────────────────────────────────────────
+// Each visitor enters birth data once; the chart is computed in the browser
+// (planets via astronomy-engine, Chiron via Moshier ephemeris, Placidus houses)
+// and stored in localStorage. Nothing is sent to any server except the
+// conversation itself, which goes directly to the Anthropic API.
+
+function getProfile() {
+  try { return JSON.parse(localStorage.getItem('cc_profile')); } catch (e) { return null; }
+}
+
+function hydrateProfile() {
+  if (!S.profile) return;
+  NATAL_POINTS = S.profile.points.map(p => ({ name: p.name, lon: p.lon }));
+  NATAL_CUSPS = S.profile.cusps || [];
+}
+
+function signOf(lon) { return SIGNS[Math.floor((((lon % 360) + 360) % 360) / 30)]; }
+
+// Historical timezone handling via the browser tz database
+function tzOffsetMs(tz, utcDate) {
+  const dtf = new Intl.DateTimeFormat('en-US', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+  const p = Object.fromEntries(dtf.formatToParts(utcDate).map(x => [x.type, x.value]));
+  return Date.UTC(p.year, p.month - 1, p.day, p.hour % 24, p.minute, p.second) - utcDate.getTime();
+}
+
+function localToUTC(tz, y, mo, d, h, mi) {
+  let guess = Date.UTC(y, mo - 1, d, h, mi);
+  for (let i = 0; i < 3; i++) guess = Date.UTC(y, mo - 1, d, h, mi) - tzOffsetMs(tz, new Date(guess));
+  return new Date(guess);
+}
+
+// Placidus houses (equal houses above polar latitudes, where Placidus fails)
+function computeHouses(date, lat, lonE) {
+  const D2R = Math.PI / 180, R2D = 180 / Math.PI;
+  const jd = date.getTime() / 864e5 + 2440587.5;
+  const T = (jd - 2451545) / 36525;
+  let gmst = (280.46061837 + 360.98564736629 * (jd - 2451545) + 0.000387933 * T * T - T * T * T / 38710000) % 360;
+  if (gmst < 0) gmst += 360;
+  const ramc = (gmst + lonE + 360) % 360;
+  const eps = 23.439291 - 0.0130042 * T;
+  const lonFromRA = ra => (Math.atan2(Math.sin(ra * D2R), Math.cos(ra * D2R) * Math.cos(eps * D2R)) * R2D + 360) % 360;
+  const mc = lonFromRA(ramc);
+  const asc = (Math.atan2(Math.cos(ramc * D2R), -(Math.sin(ramc * D2R) * Math.cos(eps * D2R) + Math.tan(lat * D2R) * Math.sin(eps * D2R))) * R2D + 360) % 360;
+  const polar = Math.abs(lat) >= 66;
+  let cusps;
+  if (polar) {
+    cusps = Array.from({ length: 12 }, (_, i) => (asc + i * 30) % 360);
+  } else {
+    const cusp = (offset, frac, nocturnal) => {
+      let ra = ramc + offset;
+      for (let i = 0; i < 60; i++) {
+        const lam = lonFromRA(ra);
+        const dec = Math.asin(Math.sin(eps * D2R) * Math.sin(lam * D2R));
+        const ad = Math.asin(Math.tan(dec) * Math.tan(lat * D2R)) * R2D;
+        ra = nocturnal ? ramc + 180 - frac * (90 - ad) : ramc + frac * (90 + ad);
+      }
+      return lonFromRA(ra);
+    };
+    const c11 = cusp(30, 1/3, false), c12 = cusp(60, 2/3, false), c2 = cusp(120, 2/3, true), c3 = cusp(150, 1/3, true);
+    cusps = [asc, c2, c3, (mc + 180) % 360, (c11 + 180) % 360, (c12 + 180) % 360, (asc + 180) % 360, (c2 + 180) % 360, (c3 + 180) % 360, mc, c11, c12];
+  }
+  return { asc, mc, cusps, polar };
+}
+
+function natalAspectList(points, speeds) {
+  const types = [['conjunct', 0], ['sextile', 60], ['square', 90], ['trine', 120], ['opposite', 180]];
+  const lum = n => n === 'Sun' || n === 'Moon';
+  const out = [];
+  for (let i = 0; i < points.length; i++) for (let j = i + 1; j < points.length; j++) {
+    const A = points[i], B = points[j];
+    if ((A.name === 'ASC' || A.name === 'MC') && (B.name === 'ASC' || B.name === 'MC')) continue;
+    let d = Math.abs(A.lon - B.lon) % 360; if (d > 180) d = 360 - d;
+    for (const [label, angle] of types) {
+      const off = Math.abs(d - angle);
+      let orb = (angle === 0 || angle === 180) ? 8 : (angle === 60 ? 5 : 7);
+      if (lum(A.name) || lum(B.name)) orb += 1.5;
+      if (off <= orb) {
+        let tag = '';
+        if (speeds[A.name] !== undefined && speeds[B.name] !== undefined) {
+          let d2 = Math.abs((A.lon + speeds[A.name]) - (B.lon + speeds[B.name])) % 360; if (d2 > 180) d2 = 360 - d2;
+          tag = Math.abs(d2 - angle) < off ? ', applying' : ', separating';
+        }
+        out.push(A.name + ' ' + label + ' ' + B.name + ' (orb ' + off.toFixed(1) + '°' + tag + ')');
+      }
+    }
+  }
+  return out;
+}
+
+function buildNatalText(p, speeds) {
+  const hoOf = lon => { for (let i = 0; i < 12; i++) { const a = p.cusps[i], b = p.cusps[(i + 1) % 12]; const span = (b - a + 360) % 360; if (((lon - a + 360) % 360) < span) return i + 1; } return 12; };
+  const lines = p.points.map(x => '  ' + x.name.padEnd(8) + ' ' + fmtZodiac(x.lon) + (x.retro ? ' ℞' : '') + ((x.name !== 'ASC' && x.name !== 'MC') ? '  H' + hoOf(x.lon) : ''));
+  const cuspLine = p.cusps.map((c, i) => 'H' + (i + 1) + ' ' + fmtZodiac(c)).join(' · ');
+  const counts = {};
+  for (const x of p.points) {
+    const s = Math.floor((((x.lon % 360) + 360) % 360) / 30);
+    const e = ['Fire', 'Earth', 'Air', 'Water'][s % 4], m = ['Cardinal', 'Fixed', 'Mutable'][s % 3];
+    counts[e] = (counts[e] || 0) + 1; counts[m] = (counts[m] || 0) + 1;
+  }
+  const aspects = natalAspectList(p.points, speeds);
+  return 'NATAL CHART — ' + p.name + ' — born ' + p.birthLocal + ' (' + p.tz + '), ' + p.city + '\n' +
+    'House system: ' + (p.polar ? 'Equal (polar latitude — Placidus undefined)' : 'Placidus') + '. Computed in-app from the birth data; tropical, geocentric.\n\nPLACEMENTS:\n' + lines.join('\n') +
+    '\n\nHOUSE CUSPS:\n  ' + cuspLine +
+    '\n\nELEMENTS: Fire ' + (counts.Fire || 0) + ', Earth ' + (counts.Earth || 0) + ', Air ' + (counts.Air || 0) + ', Water ' + (counts.Water || 0) +
+    ' · MODALITIES: Cardinal ' + (counts.Cardinal || 0) + ', Fixed ' + (counts.Fixed || 0) + ', Mutable ' + (counts.Mutable || 0) +
+    '\n\nNATAL ASPECTS (computed):\n  ' + aspects.join('\n  ') +
+    '\n\nINTERPRETATION GUIDANCE:\nNo pre-written interpretation exists for this chart — derive it live from the data above: stelliums and house emphasis, angular planets, the tightest aspects, sign dignities, the nodal axis, element and modality balance. Be specific to THESE placements; never give generic horoscope statements. If Chiron or the nodes are missing above, say so honestly when asked.';
+}
+
+async function onCreateChart() {
+  const err = document.getElementById('birthErr');
+  err.textContent = '';
+  const name = document.getElementById('bName').value.trim();
+  const d = document.getElementById('bDate').value;
+  const t = document.getElementById('bTime').value;
+  if (!name || !d || !t || !citySel) { err.textContent = 'Please fill everything in and pick a city from the suggestions.'; return; }
+  if (typeof Astronomy === 'undefined') { err.textContent = 'Astronomy library not loaded — check your connection and reload.'; return; }
+  document.getElementById('createBtn').disabled = true;
+  try {
+    const [y, mo, dd] = d.split('-').map(Number);
+    const [h, mi] = t.split(':').map(Number);
+    const ut = localToUTC(citySel.timezone, y, mo, dd, h, mi);
+    const later = new Date(ut.getTime() + 864e5);
+    const pts = [], speeds = {};
+    for (const [nm] of TRANSIT_BODIES) {
+      let lon, lon2;
+      if (nm === 'Chiron') {
+        if (!window.MoshierEph) continue;
+        lon = window.MoshierEph.getAllPlanets(ut, citySel.longitude, citySel.latitude, 0).observed.chiron.apparentLongitudeDd;
+        lon2 = window.MoshierEph.getAllPlanets(later, citySel.longitude, citySel.latitude, 0).observed.chiron.apparentLongitudeDd;
+      } else { lon = bodyLon(nm, ut); lon2 = bodyLon(nm, later); }
+      const drift = ((lon2 - lon + 540) % 360) - 180;
+      pts.push({ name: nm, lon, retro: drift < 0 });
+      speeds[nm] = drift;
+    }
+    const H = computeHouses(ut, citySel.latitude, citySel.longitude);
+    pts.push({ name: 'ASC', lon: H.asc }, { name: 'MC', lon: H.mc });
+    const profile = {
+      name, city: citySel.label, tz: citySel.timezone, lat: citySel.latitude, lonE: citySel.longitude,
+      birthLocal: d + ' ' + t, birthUTC: ut.toISOString(),
+      points: pts, cusps: H.cusps, polar: H.polar
+    };
+    profile.natalText = buildNatalText(profile, speeds);
+    S.profile = profile;
+    localStorage.setItem('cc_profile', JSON.stringify(profile));
+    hydrateProfile();
+    renderNatal(); renderSky();
+    const sun = pts.find(x => x.name === 'Sun');
+    document.getElementById('stepBirth').style.display = 'none';
+    document.getElementById('stepKey').style.display = 'block';
+    document.getElementById('chartHello').innerHTML = esc(name) + ' — ' + esc(signOf(sun.lon)) + ' Sun, ' + esc(signOf(H.asc)) + ' Rising.<br>Your chart is calculated. One more step.';
+  } catch (e) {
+    err.textContent = 'Chart calculation failed: ' + (e.message || e);
+  }
+  document.getElementById('createBtn').disabled = false;
+}
+
+let citySel = null, cityTimer = null;
+function onCityInput() {
+  citySel = null;
+  const q = document.getElementById('bCity').value.trim();
+  clearTimeout(cityTimer);
+  const box = document.getElementById('cityResults');
+  if (q.length < 2) { box.innerHTML = ''; return; }
+  cityTimer = setTimeout(async () => {
+    try {
+      const r = await fetch('https://geocoding-api.open-meteo.com/v1/search?name=' + encodeURIComponent(q) + '&count=5&language=en&format=json');
+      const data = await r.json();
+      const res = data.results || [];
+      box.innerHTML = res.length ? res.map((c, i) =>
+        '<div class="city-row" data-i="' + i + '">' + esc(c.name + (c.admin1 ? ', ' + c.admin1 : '') + ' · ' + (c.country || '')) + '</div>').join('')
+        : '<div class="city-row">No matches — try another spelling</div>';
+      box.querySelectorAll('.city-row[data-i]').forEach(el => el.onclick = () => {
+        const c = res[+el.dataset.i];
+        citySel = { label: c.name + ', ' + (c.country || ''), latitude: c.latitude, longitude: c.longitude, timezone: c.timezone };
+        document.getElementById('bCity').value = citySel.label;
+        box.innerHTML = '';
+      });
+    } catch (e) { box.innerHTML = '<div class="city-row">Lookup failed — check your connection</div>'; }
+  }, 350);
+}
+
+function onResetChart() {
+  if (!confirm('Replace the birth data? The current chart will be cleared.')) return;
+  localStorage.removeItem('cc_profile');
+  location.reload();
+}
+
+const GLYPHS = { Sun: '☉', Moon: '☽', Mercury: '☿', Venus: '♀', Mars: '♂', Jupiter: '♃', Saturn: '♄', Uranus: '♅', Neptune: '♆', Pluto: '♇', 'N.Node': '☊', Chiron: '⚷', ASC: '', MC: '' };
+
+function renderNatal() {
+  if (!S.profile) return;
+  const p = S.profile;
+  const hoOf = lon => { for (let i = 0; i < 12; i++) { const a = p.cusps[i], b = p.cusps[(i + 1) % 12]; const span = (b - a + 360) % 360; if (((lon - a + 360) % 360) < span) return i + 1; } return 12; };
+  document.getElementById('natalLabel').textContent = 'Natal Chart · ' + p.name + ' · ' + p.birthLocal.split(' ')[0];
+  const sun = p.points.find(x => x.name === 'Sun');
+  const asc = p.points.find(x => x.name === 'ASC');
+  document.getElementById('chartSummary').textContent = p.name + ' · ' + (sun ? signOf(sun.lon) + ' Sun' : '') + (asc ? ' · ' + signOf(asc.lon) + ' Rising' : '');
+  document.getElementById('natalList').innerHTML = p.points.map(x =>
+    '<div class="prow"><span class="pname">' + (GLYPHS[x.name] ? GLYPHS[x.name] + ' ' : '') + esc(x.name) + '</span> <span class="ppos">' + esc(fmtZodiac(x.lon)) + (x.retro ? ' ℞' : '') + ((x.name !== 'ASC' && x.name !== 'MC') ? ' · H' + hoOf(x.lon) : '') + '</span></div>').join('');
+}
+
+// ─── LIVE TRANSITS ────────────────────────────────────────────────────────────
+// The natal chart above stays hardcoded (Astro-Seek import — it never changes).
+// Current planetary positions are computed live in the browser by astronomy-engine.
+const SIGNS = ['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'];
+
+// Populated from the visitor profile (hydrateProfile)
+let NATAL_POINTS = [];
+let NATAL_CUSPS = [];
+
+function houseOf(lon) {
+  for (let i = 0; i < 12; i++) {
+    const a = NATAL_CUSPS[i], b = NATAL_CUSPS[(i + 1) % 12];
+    const span = (b - a + 360) % 360;
+    if (((lon - a + 360) % 360) < span) return i + 1;
+  }
+  return 12;
+}
+
+const TRANSIT_BODIES = [
+  ['Sun','☉'], ['Moon','☽'], ['Mercury','☿'], ['Venus','♀'], ['Mars','♂'],
+  ['Jupiter','♃'], ['Saturn','♄'], ['Uranus','♅'], ['Neptune','♆'], ['Pluto','♇'],
+  ['N.Node','☊'], ['Chiron','⚷']
+];
+
+const ASPECT_TYPES = [
+  ['conjunct', 0, 6], ['sextile', 60, 4], ['square', 90, 5], ['trine', 120, 5], ['opposite', 180, 6]
+];
+
+function bodyLon(name, date) {
+  if (name === 'Moon') return Astronomy.EclipticGeoMoon(date).lon;
+  if (name === 'Sun')  return Astronomy.SunPosition(date).elon;
+  if (name === 'N.Node') return trueNodeLon(date);
+  if (name === 'Chiron') return chironLon(date);
+  return Astronomy.Ecliptic(Astronomy.GeoVector(Astronomy.Body[name], date, true)).elon;
+}
+
+// True lunar node: where the Moon's instantaneous orbital plane crosses the
+// ecliptic of date. Orbit normal = r × v; ascending node direction = ẑ × normal.
+function trueNodeLon(date) {
+  const st = Astronomy.GeoMoonState(date);
+  const rot = Astronomy.Rotation_EQJ_ECT(st.t);
+  const r = Astronomy.RotateVector(rot, new Astronomy.Vector(st.x, st.y, st.z, st.t));
+  const v = Astronomy.RotateVector(rot, new Astronomy.Vector(st.vx, st.vy, st.vz, st.t));
+  const n = { x: r.y*v.z - r.z*v.y, y: r.z*v.x - r.x*v.z, z: r.x*v.y - r.y*v.x };
+  return (Math.atan2(n.x, -n.y) * 180 / Math.PI + 360) % 360;
+}
+
+// Chiron comes from the Moshier ephemeris (loaded as an ES module below);
+// astronomy-engine does not cover asteroids. Returns null until it loads.
+function chironLon(date) {
+  if (!window.MoshierEph) return null;
+  const la = S.profile ? S.profile.lat : 0, lo = S.profile ? S.profile.lonE : 0;
+  return window.MoshierEph.getAllPlanets(date, lo, la, 0).observed.chiron.apparentLongitudeDd;
+}
+
+function fmtZodiac(lon) {
+  const totalMin = Math.round((((lon % 360) + 360) % 360) * 60) % 21600;
+  const deg = Math.floor(totalMin / 60);
+  const min = totalMin % 60;
+  return SIGNS[Math.floor(deg / 30)] + ' ' + (deg % 30) + '°' + String(min).padStart(2, '0') + '\'';
+}
+
+function aspectsTo(lon) {
+  const hits = [];
+  for (const n of NATAL_POINTS) {
+    let diff = Math.abs(lon - n.lon) % 360;
+    if (diff > 180) diff = 360 - diff;
+    for (const [label, angle, orb] of ASPECT_TYPES) {
+      const off = Math.abs(diff - angle);
+      if (off <= orb) hits.push({ label, target: n.name, orb: off });
+    }
+  }
+  return hits.sort((a, b) => a.orb - b.orb);
+}
+
+function computeTransits() {
+  if (typeof Astronomy === 'undefined') return null;
+  try {
+    const now = new Date();
+    const tomorrow = new Date(now.getTime() + 864e5);
+    const out = [];
+    for (const [name, glyph] of TRANSIT_BODIES) {
+      const lon = bodyLon(name, now);
+      if (lon === null) continue; // Chiron before its ephemeris loads
+      const drift = ((bodyLon(name, tomorrow) - lon + 540) % 360) - 180;
+      out.push({ name, glyph, lon, house: houseOf(lon), retro: drift < 0, aspects: aspectsTo(lon) });
+    }
+    return out;
+  } catch (e) {
+    return null;
+  }
+}
+
+function buildTransitBlock() {
+  const t = computeTransits();
+  if (!t) return '\nLIVE TRANSIT DATA: unavailable this session (calculation library did not load). Approximate honestly and say so.\n';
+  const lines = t.map(p => {
+    const asp = p.aspects.map(a => a.label + ' natal ' + a.target + ' (orb ' + a.orb.toFixed(1) + '°)').join(', ');
+    return '  ' + p.name.padEnd(8) + ' ' + fmtZodiac(p.lon) + (p.retro ? ' ℞' : '') + ' · natal H' + p.house + (asp ? '  →  ' + asp : '');
+  });
+  const chironNote = t.some(p => p.name === 'Chiron') ? '' :
+    '\n— Transiting Chiron is unavailable this session (its ephemeris did not load). If asked, approximate honestly and say so.';
+  return `
+CURRENT SKY — computed live at ${new Date().toString()} (geocentric, tropical):
+${lines.join('\n')}
+
+About this data:
+— Positions, retrogrades, aspect orbs, and house placements above are calculated, not approximated. Treat them as accurate and ground transit interpretation in them.
+— Houses are the natal Placidus houses each transiting body currently moves through (cusps computed from the birth data).
+— N.Node is the true lunar node. The South Node sits exactly opposite.${chironNote}`;
+}
+
+// ─── SYSTEM PROMPT ────────────────────────────────────────────────────────────
+function buildSystem(mode) {
+  const today = new Date().toLocaleDateString('en-US', {
+    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+  });
+
+  const modeGuide = {
+    reflect:
+      'The person is in open reflection. Create space. Ask one good question. Mirror back with precision. Don’t rush to meaning — dwell in what’s emerging.',
+    question:
+      'The person has a specific question about their chart or life. Be direct and concrete. Connect the question to actual placements. Give a clear perspective, not a hedge.',
+    doubt:
+      'The person is wrestling with uncertainty. Don’t rush to reassure. Sit with them in the doubt first. Then — and only then — point to specific chart strengths. Not encouragement: precision.',
+    celebrate:
+      'The person has a win. Celebrate genuinely. Then help them understand WHY this win matters in their chart’s arc — what it activates, what it signals, what chapter it opens.',
+    transit:
+      'The person wants to understand the current astrological weather relative to their chart. Today is ' + today + '. A CURRENT SKY section with live-computed planetary positions and their exact aspects to this natal chart is included above — ground your interpretation in that data. Prioritize the major slow-planet transits — Pluto, Saturn, Neptune, Uranus — as these are most consequential.',
+    milestone:
+      'The person is marking an important moment. Help them locate this event in their larger chart story. What chapter does it open or close? What house or archetype does it activate? What does it mean for their path?'
+  };
+
+  return `You are the personal astrological companion for a specific person. You hold intimate, precise knowledge of their natal chart — not as abstract symbols but as a living map of their psyche, potential, and path.
+
+Today: ${today}
+
+${S.profile ? S.profile.natalText : ""}
+${buildTransitBlock()}
+
+YOUR APPROACH:
+— Be specific to this chart. Never give generic horoscope statements.
+— Be wise but never preachy. Challenge gently and precisely when a blind spot is active.
+— Weave astrological insight into practical, embodied reality — not mystical abstraction.
+— Reference the conversation history you're given. The person should feel remembered.
+— Responses: usually 2–4 paragraphs. Tight and meaningful. Don't over-explain.
+— One question per response maximum. Make it count.
+— The CURRENT SKY block is calculated and reliable. Beyond it, be honest about approximations — never invent transit data.
+— Match their energy. If they're light, be light. If they're in it, go deep.
+— You are their most knowing mirror — the one who reads the map and asks the questions that matter.
+
+CURRENT MODE: ${modeGuide[mode] || modeGuide.reflect}`;
+}
+
+// ─── STARTERS ────────────────────────────────────────────────────────────────
+const STARTERS = {
+  reflect:    ['What’s been pulling at me lately…', 'I keep coming back to…', 'Something feels stuck around…', 'I’ve been noticing a pattern…'],
+  question:   ['What stands out most in my chart?', 'Why do I keep attracting the same dynamic?', 'What is my North Node actually calling me to?', 'What does my rising sign hide?'],
+  doubt:      ['I’m questioning whether…', 'I feel like I’ve been going in circles around…', 'I don’t know if I’m doing the right thing with…', 'What if I’m wrong about…'],
+  celebrate:  ['Something good happened…', 'I finally did the thing I was afraid of…', 'I got the result I worked for…', 'I surprised myself today…'],
+  transit:    ['What’s happening astrologically for me right now?', 'What major transits should I know about?', 'Is this a good time for a big change?', 'What’s the energy of this period for my chart?'],
+  milestone:  ['I want to mark this moment…', 'Something big just shifted…', 'I’m at a threshold I can feel…', 'This chapter is closing / opening…']
+};
+
+const PLACEHOLDERS = {
+  reflect:    'What’s alive in you right now?',
+  question:   'What are you curious about in your chart?',
+  doubt:      'What are you wrestling with?',
+  celebrate:  'What happened? Tell me.',
+  transit:    'Ask about current planetary weather…',
+  milestone:  'Describe this moment to remember…'
+};
+
+// ─── STATE ───────────────────────────────────────────────────────────────────
+let S = {
+  key: '',
+  mode: 'reflect',
+  messages: [],
+  sessionId: String(Date.now()),
+  jType: 'milestone'
+};
+
+// ─── INIT ────────────────────────────────────────────────────────────────────
+function init() {
+  S.key = localStorage.getItem('cc_key') || '';
+  S.profile = getProfile();
+  hydrateProfile();
+  if (S.profile && S.key) {
+    showApp();
+  } else {
+    document.getElementById('setupOverlay').style.display = 'flex';
+    if (S.profile) {
+      document.getElementById('stepBirth').style.display = 'none';
+      document.getElementById('stepKey').style.display = 'block';
+      document.getElementById('chartHello').textContent = 'Welcome back, ' + S.profile.name + '. One more step.';
+    }
+  }
+
+  document.getElementById('dateBadge').textContent =
+    new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+
+  renderStarters();
+  renderNatal();
+  renderSky();
+  renderJournal();
+  renderBook();
+}
+
+
+function renderSky() {
+  const list = document.getElementById('skyList');
+  if (!S.profile) { list.innerHTML = '<div class="prow"><span class="pname">Awaiting birth data…</span></div>'; return; }
+  const t = computeTransits();
+  if (!t) {
+    list.innerHTML = '<div class="prow"><span class="pname">Live data unavailable</span></div>';
+    return;
+  }
+  list.innerHTML = t.filter(p => p && typeof p.lon === 'number').map(p => {
+    const tip = p.aspects.length
+      ? p.aspects.map(a => a.label + ' natal ' + a.target).join(', ')
+      : 'no major aspects to natal chart';
+    return `<div class="prow" title="${esc(tip)}"><span class="pname">${p.glyph} ${p.name}</span> <span class="ppos">${esc(fmtZodiac(p.lon))}${p.retro ? ' ℞' : ''} · H${p.house}</span></div>`;
+  }).join('');
+}
+
+function showApp() {
+  document.getElementById('setupOverlay').style.display = 'none';
+  document.getElementById('app').style.display = 'grid';
+  renderNatal();
+  renderSky();
+}
+
+// ─── KEY MANAGEMENT ──────────────────────────────────────────────────────────
+function onSaveKey() {
+  const k = document.getElementById('keyInput').value.trim();
+  if (!k.startsWith('sk-ant-')) {
+    alert('Please enter a valid Anthropic API key (starts with sk-ant-)');
+    return;
+  }
+  S.key = k;
+  localStorage.setItem('cc_key', k);
+  showApp();
+}
+
+function onResetKey() {
+  localStorage.removeItem('cc_key');
+  S.key = '';
+  document.getElementById('keyInput').value = '';
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('setupOverlay').style.display = 'flex';
+}
+
+function onClearSessions() {
+  if (!confirm('Clear all saved conversations? Journal entries will be kept.')) return;
+  localStorage.removeItem('cc_sessions');
+  renderBook();
+}
+
+// ─── MODE ────────────────────────────────────────────────────────────────────
+function setMode(btn) {
+  document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  S.mode = btn.dataset.mode;
+  renderStarters();
+  document.getElementById('inputBox').placeholder = PLACEHOLDERS[S.mode] || 'Say anything…';
+}
+
+function renderStarters() {
+  const items = STARTERS[S.mode] || STARTERS.reflect;
+  document.getElementById('starters').innerHTML = items.map(s =>
+    `<div class="starter" onclick="useStarter(this)">${esc(s)}</div>`
+  ).join('');
+}
+
+function useStarter(el) {
+  const box = document.getElementById('inputBox');
+  box.value = el.textContent;
+  autoGrow(box);
+  box.focus();
+}
+
+// ─── CONVERSATION ────────────────────────────────────────────────────────────
+function onKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
+}
+
+function autoGrow(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 140) + 'px';
+}
+
+async function send() {
+  const box = document.getElementById('inputBox');
+  const text = box.value.trim();
+  if (!text || !S.key) return;
+
+  // Remove welcome if present
+  const w = document.getElementById('welcome');
+  if (w) w.remove();
+
+  S.messages.push({ role: 'user', content: text });
+  appendMsg({ role: 'user', content: text });
+
+  box.value = '';
+  box.style.height = 'auto';
+
+  const btn = document.getElementById('sendBtn');
+  btn.disabled = true;
+
+  const typingEl = addTyping();
+
+  try {
+    const reply = await callAPI();
+    typingEl.remove();
+    S.messages.push({ role: 'assistant', content: reply });
+    appendMsg({ role: 'assistant', content: reply });
+    saveSession();
+  } catch (err) {
+    typingEl.remove();
+    const e = document.createElement('div');
+    e.className = 'err-msg';
+    e.textContent = 'Error: ' + (err.message || 'Could not reach the API. Check your key and try again.');
+    document.getElementById('convo').appendChild(e);
+  }
+
+  btn.disabled = false;
+  scrollBottom();
+}
+
+async function callAPI() {
+  // Keep last 24 messages for context (12 back-and-forth)
+  const msgs = S.messages.slice(-24);
+
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': S.key,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true'
+    },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 1500,
+      system: buildSystem(S.mode),
+      messages: msgs
+    })
+  });
+
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.error?.message || `HTTP ${res.status}`);
+  }
+
+  const data = await res.json();
+  return data.content[0].text;
+}
+
+function appendMsg(msg) {
+  const convo = document.getElementById('convo');
+  const time = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+  const div = document.createElement('div');
+  div.className = 'msg ' + msg.role;
+  div.innerHTML =
+    `<div class="bubble">${fmtText(msg.content)}</div>` +
+    `<div class="msg-meta">${msg.role === 'user' ? 'You' : '✦ Compass'} · ${time}</div>`;
+  convo.appendChild(div);
+  scrollBottom();
+}
+
+function addTyping() {
+  const convo = document.getElementById('convo');
+  const el = document.createElement('div');
+  el.className = 'typing';
+  el.innerHTML = '<div class="dot"></div><div class="dot"></div><div class="dot"></div>';
+  convo.appendChild(el);
+  scrollBottom();
+  return el;
+}
+
+function scrollBottom() {
+  const c = document.getElementById('convo');
+  c.scrollTop = c.scrollHeight;
+}
+
+function fmtText(raw) {
+  return raw
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    .split('\n\n').map(p => `<p>${p.replace(/\n/g, '<br>')}</p>`).join('');
+}
+
+// ─── SESSIONS / THE BOOK ─────────────────────────────────────────────────────
+function saveSession() {
+  if (S.messages.length < 2) return;
+  const all = getSessions();
+  const firstUser = S.messages.find(m => m.role === 'user')?.content || 'Session';
+  const title = firstUser.length > 65 ? firstUser.slice(0, 62) + '…' : firstUser;
+  const session = {
+    id: S.sessionId,
+    date: new Date().toISOString(),
+    mode: S.mode,
+    title,
+    messages: [...S.messages]
+  };
+  const idx = all.findIndex(s => s.id === S.sessionId);
+  if (idx >= 0) all[idx] = session; else all.unshift(session);
+  localStorage.setItem('cc_sessions', JSON.stringify(all.slice(0, 120)));
+  renderBook();
+}
+
+function getSessions() {
+  return JSON.parse(localStorage.getItem('cc_sessions') || '[]');
+}
+
+function newSession() {
+  S.messages = [];
+  S.sessionId = String(Date.now());
+  document.getElementById('convo').innerHTML =
+    `<div class="welcome" id="welcome">
+       <div class="welcome-orb">✦</div>
+       <h3>What brings you here today?</h3>
+       <p>Choose a mode on the left, pick a prompt below, or just start typing. This is your space.</p>
+     </div>`;
+}
+
+function renderBook() {
+  const sessions = getSessions();
+  const container = document.getElementById('bookChapters');
+  if (!sessions.length) {
+    container.innerHTML = '<p class="book-empty">Your conversations will appear here as chapters.</p>';
+    return;
+  }
+  container.innerHTML = sessions.map((s, i) => {
+    const date = new Date(s.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+    const exchanges = Math.ceil(s.messages.length / 2);
+    const msgsHtml = s.messages.map(m =>
+      `<div class="ch-msg ${m.role}"><strong>${m.role === 'user' ? 'You' : 'Compass'}</strong>${esc(m.content.slice(0, 320))}${m.content.length > 320 ? '…' : ''}</div>`
+    ).join('');
+    return `
+      <div class="chapter">
+        <div class="chapter-head" onclick="toggleChapter(${i})">
+          <div>
+            <div class="chapter-title">${esc(s.title)}</div>
+            <div class="chapter-meta">${date} · ${exchanges} exchange${exchanges !== 1 ? 's' : ''} · ${s.mode}</div>
+          </div>
+          <span class="chapter-arrow" id="arr-${i}">▸</span>
+        </div>
+        <div class="chapter-body" id="ch-${i}">${msgsHtml}</div>
+      </div>`;
+  }).join('');
+}
+
+function toggleChapter(i) {
+  const body = document.getElementById('ch-' + i);
+  const arr  = document.getElementById('arr-' + i);
+  const open = body.classList.toggle('open');
+  arr.textContent = open ? '▾' : '▸';
+}
+
+// ─── JOURNAL ─────────────────────────────────────────────────────────────────
+function pickType(btn) {
+  document.querySelectorAll('.chip').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  S.jType = btn.dataset.type;
+}
+
+function saveEntry() {
+  const text = document.getElementById('jText').value.trim();
+  if (!text) return;
+  const all = getJournal();
+  all.unshift({ id: Date.now(), date: new Date().toISOString(), type: S.jType, content: text });
+  localStorage.setItem('cc_journal', JSON.stringify(all.slice(0, 500)));
+  document.getElementById('jText').value = '';
+  renderJournal();
+}
+
+function getJournal() {
+  return JSON.parse(localStorage.getItem('cc_journal') || '[]');
+}
+
+function renderJournal() {
+  const all = getJournal();
+  const container = document.getElementById('jEntries');
+  if (!all.length) {
+    container.innerHTML = '<p style="text-align:center;color:var(--text-muted);font-size:0.82rem;padding:16px 0;">No entries yet. Start writing.</p>';
+    return;
+  }
+  container.innerHTML = all.map(e => {
+    const date = new Date(e.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+    return `
+      <div class="j-entry">
+        <div class="j-entry-top">
+          <span class="j-type-badge badge-${e.type}">${e.type.toUpperCase()}</span>
+          <span class="j-date">${date}</span>
+        </div>
+        <div class="j-text">${esc(e.content)}</div>
+      </div>`;
+  }).join('');
+}
+
+// ─── TABS ────────────────────────────────────────────────────────────────────
+function switchTab(id, el) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('pane-' + id).classList.add('active');
+  if (id === 'book') renderBook();
+}
+
+// ─── UTILS ───────────────────────────────────────────────────────────────────
+function esc(s) {
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+// ─── BOOT ────────────────────────────────────────────────────────────────────
+init();
+</script>
+<script type="module">
+// Moshier ephemeris for Chiron (astronomy-engine doesn't cover asteroids).
+// Loads after the main app; the sky panel re-renders once it arrives.
+try {
+  const m = await import('https://cdn.jsdelivr.net/npm/ephemeris@2.2.0/+esm');
+  window.MoshierEph = m.default || m;
+  if (typeof renderSky === 'function') renderSky();
+} catch (e) {
+  // Chiron simply won't appear; the system prompt notes its absence honestly.
+}
+</script>
+</body>
+</html>

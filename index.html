@@ -836,6 +836,7 @@ textarea.input-box::placeholder { color: var(--text-muted); }
           </div>
           <button class="btn btn-primary" id="ddGenBtn" onclick="generateDeepDive()" style="display:none;">Write my Deep Dive ✦</button>
           <button class="btn btn-ghost" id="ddDlBtn" onclick="downloadDeepDive()" style="display:none;">Download ↓</button>
+          <button class="btn btn-ghost" id="ddRwBtn" onclick="rewriteDeepDive()" style="display:none;">Rewrite ↻</button>
         </div>
         <div id="deepDiveContent" class="dd-content"></div>
       </div>
@@ -1578,18 +1579,20 @@ const DD_SYSTEMS = {
     'Structure the output in markdown exactly like this: a "# The Deep Dive" title; a short italic epigraph line; two intro paragraphs on how to use the document (one section at a time, sit with the questions); a "## The Blind Spots" section with five to seven subsections ("### 1. <Evocative Name>" etc.), each 150-250 words naming one specific psychological blind spot visible in the chart data — ground each one in the actual placements (cite them: signs, houses, tight aspects, dignities, stelliums, the nodal axis) and end each with an italic line beginning "*To sit with:*" holding one piercing question; ' +
     'then a "## The Paradoxes" section with four to six subsections ("### I. <Name>" etc.), each a 100-150 word prose meditation on a genuine tension the chart holds (not problems to solve), each ending with a single italic line that lands quietly; then "## Working With This Document" — one short closing section. ' +
     'Derive everything from the data provided. Tightest aspects and angular planets matter most. Be specific to THESE placements — nothing that could be said to everyone. Honesty over flattery; warmth over softness.',
-  story: 'You are a gifted writer with deep astrological knowledge, writing "The Story" — a personal document for one specific person, derived strictly from their natal chart data, but written as flowing literary prose for a reader with zero astrology knowledge. ' +
-    'Rules: almost no astrological terminology — no degrees, no house numbers, no aspect names; at most a rare, gentle mention of a planet as a character in the story. Translate the chart psychology into lived, recognizable inner experience — moments, scenes, patterns the reader will know from the inside. ' +
-    'Voice: warm, intimate, literary, unhurried; no hype, no exclamation marks; second person throughout. ' +
-    'Structure the output in markdown exactly like this: a "# The Story of You" title; a short italic epigraph; then five to seven chapters ("## <Evocative chapter title>" — titles like a novel, never technical), each 150-250 words of continuous prose telling one true pattern, derived from the strongest signatures in the chart data (tightest aspects, angular planets, stelliums, the nodal axis) but never naming the mechanics; each chapter closes with one italic question; then a short final chapter "## Where the story opens" about what is waiting to change. ' +
-    'The reader should feel precisely seen — including the uncomfortable parts. Honesty over flattery; nothing that could be said to everyone.'
+  story: 'You are a wise, warm astrologer writing "The Story" — a personal reading for one specific person, derived strictly from their natal chart data, written for a reader with no astrology background. It names the same blind spots and paradoxes a technical reading would find, but explains them in simple, impactful language. ' +
+    'How to use astrology in the text: anchor every section in one or two real chart factors, and explain each symbol in plain words at first use — for example: "the 4th house, the part of a chart that holds home, family, and roots" or "Mars, the planet of drive and anger". Then show what that placement reveals in lived experience. ' +
+    'Never use degrees, minutes, or orbs, and never technical phrasing: not "conjunct within 2.5 degrees" but "sits right beside"; not "opposition" but "stands directly across from"; not "retrograde" alone but "its energy turns inward". One or two named factors per section — precision through clarity, not through numbers. ' +
+    'Voice: simple, wise, direct; short sentences that land; no hype, no exclamation marks; second person throughout. ' +
+    'Structure the output in markdown exactly like this: a "# The Story of You" title; a short italic epigraph; one short intro paragraph on how to read it (one section at a time); a "## The Blind Spots" section with five to six subsections ("### 1. <Evocative Name>" etc.), each 130-200 words, each grounded in named chart factors explained simply, ending with an italic line beginning "*To sit with:*" holding one clear question; ' +
+    'then a "## The Paradoxes" section with three to five subsections ("### I. <Name>" etc.), each 90-140 words on a genuine tension the chart holds (not a problem to solve), also anchored in a named chart factor, ending with a single italic line that lands quietly; then "## Where the story opens" — a short closing about what is waiting to change. ' +
+    'Derive everything from the data provided — strongest signatures first: stelliums, angular planets, the tightest aspects, the nodal axis. Be specific to THESE placements; nothing that could be said to everyone. Honesty over flattery; the reader should feel precisely seen, including the uncomfortable parts.'
 };
 
 const DD_LABELS = {
   deep:  { gen: 'Write my Deep Dive ✦', file: 'Chart-Compass-Deep-Dive.html', title: 'Chart Compass — The Deep Dive',
            empty: 'A one-time reading written from your exact chart — your blind spots, your paradoxes, and the questions they ask of you.<br>It takes about a minute to write, and it is yours to keep.' },
   story: { gen: 'Tell me my story ✦', file: 'Chart-Compass-The-Story.html', title: 'Chart Compass — The Story',
-           empty: 'The same chart, told as a story — no jargon, no technique, just you on the page.<br>For when you want to feel it rather than study it.' }
+           empty: 'Your blind spots and paradoxes, told simply — the same depth, in plain human language.<br>Each one anchored in your chart, explained as it goes.' }
 };
 
 function setDdStyle(s) {
@@ -1638,6 +1641,7 @@ async function generateDeepDive() {
     renderDeepDive();
   } catch (e) {
     btn.disabled = false;
+    btn.style.display = 'inline-block';
     btn.textContent = 'Try again';
     box.innerHTML = '<p style="text-align:center;color:#e08585;">Could not generate: ' + esc(e.message || 'unknown error') + '</p>' +
       '<p style="text-align:center;opacity:0.6;">Common causes: the API key has no credit, or the connection dropped mid-write.</p>';
@@ -1664,17 +1668,27 @@ function renderDeepDive() {
   const gen = document.getElementById('ddGenBtn');
   const dl  = document.getElementById('ddDlBtn');
   const L = DD_LABELS[S.ddStyle];
+  const rw = document.getElementById('ddRwBtn');
   if (S.deepDives[S.ddStyle]) {
     gen.style.display = 'none';
     dl.style.display = 'inline-block';
+    rw.style.display = 'inline-block';
     box.innerHTML = ddHtml();
   } else {
     gen.style.display = 'inline-block';
     gen.disabled = false;
     gen.textContent = L.gen;
     dl.style.display = 'none';
+    rw.style.display = 'none';
     box.innerHTML = '<p style="text-align:center;opacity:0.7;">' + L.empty + '</p>';
   }
+}
+
+function rewriteDeepDive() {
+  if (!confirm('Write a fresh version? The current one will be replaced.')) return;
+  document.getElementById('ddRwBtn').style.display = 'none';
+  document.getElementById('ddDlBtn').style.display = 'none';
+  generateDeepDive();
 }
 
 function downloadDeepDive() {

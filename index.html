@@ -640,6 +640,14 @@ textarea.input-box::placeholder { color: var(--text-muted); }
   .sidebar { display: none; }
 }
 
+/* Language + Deep Dive toggle */
+.modal select, .sb-row select { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.14); color: inherit; border-radius: 8px; padding: 10px 12px; font: inherit; font-size: 0.9rem; }
+.modal select { width: 100%; margin-bottom: 8px; }
+.sb-row select { padding: 4px 8px; font-size: 0.78rem; max-width: 110px; }
+.dd-toggle { display: flex; gap: 8px; justify-content: center; margin-top: 12px; }
+.dd-pill { padding: 7px 16px; border-radius: 18px; border: 1px solid rgba(200,170,110,0.35); background: transparent; color: inherit; cursor: pointer; font: inherit; font-size: 0.85rem; opacity: 0.7; }
+.dd-pill.active { background: rgba(200,170,110,0.15); color: var(--gold); opacity: 1; }
+
 /* Deep Dive */
 .dd-content { max-width: 660px; margin: 0 auto; padding: 8px 18px 60px; }
 .dd-content h2 { font-size: 1.45rem; color: var(--gold); margin: 26px 0 10px; font-weight: 600; }
@@ -673,6 +681,14 @@ textarea.input-box::placeholder { color: var(--text-muted); }
       </div>
       <input type="text" id="bCity" placeholder="Birth city — start typing…" autocomplete="off" oninput="onCityInput()">
       <div id="cityResults"></div>
+      <select id="bLang" title="Language of readings and conversation">
+          <option value="English">English</option>
+          <option value="Deutsch">Deutsch</option>
+          <option value="Lietuvių">Lietuvių</option>
+          <option value="Italiano">Italiano</option>
+          <option value="Français">Français</option>
+          <option value="Español">Español</option>
+      </select>
       <p class="key-note">Exact birth time matters — houses shift every few minutes.<br>If unknown, use 12:00 and hold house placements loosely.</p>
       <button class="btn btn-primary" id="createBtn" onclick="onCreateChart()">Calculate my chart →</button>
       <p class="key-note" id="birthErr" style="color:#e08585;"></p>
@@ -733,6 +749,16 @@ textarea.input-box::placeholder { color: var(--text-muted); }
     </div>
 
     <div class="sb-settings">
+      <div class="sb-row"><span>Language</span>
+        <select id="langSel" onchange="onLangChange(this.value)">
+          <option value="English">English</option>
+          <option value="Deutsch">Deutsch</option>
+          <option value="Lietuvių">Lietuvių</option>
+          <option value="Italiano">Italiano</option>
+          <option value="Français">Français</option>
+          <option value="Español">Español</option>
+        </select>
+      </div>
       <div class="sb-row"><span>Birth Data</span> <button onclick="onResetChart()">Change</button></div>
       <div class="sb-row"><span>API Key</span>  <button onclick="onResetKey()">Change</button></div>
       <div class="sb-row"><span>Sessions</span> <button onclick="onClearSessions()">Clear all</button></div>
@@ -803,7 +829,11 @@ textarea.input-box::placeholder { color: var(--text-muted); }
       <div class="book-wrap">
         <div class="book-header">
           <h3>The Deep Dive</h3>
-          <p>Your blind spots and paradoxes — written from your chart, for you alone.</p>
+          <p>Two readings from one chart — the depth, and the story.</p>
+          <div class="dd-toggle">
+            <button class="dd-pill active" id="pillDeep" onclick="setDdStyle('deep')">The Deep Dive</button>
+            <button class="dd-pill" id="pillStory" onclick="setDdStyle('story')">The Story</button>
+          </div>
           <button class="btn btn-primary" id="ddGenBtn" onclick="generateDeepDive()" style="display:none;">Write my Deep Dive ✦</button>
           <button class="btn btn-ghost" id="ddDlBtn" onclick="downloadDeepDive()" style="display:none;">Download ↓</button>
         </div>
@@ -955,6 +985,7 @@ async function onCreateChart() {
     pts.push({ name: 'ASC', lon: H.asc }, { name: 'MC', lon: H.mc });
     const profile = {
       name, city: citySel.label, tz: citySel.timezone, lat: citySel.latitude, lonE: citySel.longitude,
+      lang: document.getElementById('bLang').value || 'English',
       birthLocal: d + ' ' + t, birthUTC: ut.toISOString(),
       points: pts, cusps: H.cusps, polar: H.polar
     };
@@ -1002,6 +1033,8 @@ function onResetChart() {
   if (!confirm('Replace the birth data? The current chart will be cleared.')) return;
   localStorage.removeItem('cc_profile');
   localStorage.removeItem('cc_deepdive');
+  localStorage.removeItem('cc_dd_deep');
+  localStorage.removeItem('cc_dd_story');
   location.reload();
 }
 
@@ -1012,6 +1045,8 @@ function renderNatal() {
   const p = S.profile;
   const hoOf = lon => { for (let i = 0; i < 12; i++) { const a = p.cusps[i], b = p.cusps[(i + 1) % 12]; const span = (b - a + 360) % 360; if (((lon - a + 360) % 360) < span) return i + 1; } return 12; };
   document.getElementById('natalLabel').textContent = 'Natal Chart · ' + p.name + ' · ' + p.birthLocal.split(' ')[0];
+  const langSel = document.getElementById('langSel');
+  if (langSel && p.lang) langSel.value = p.lang;
   const sun = p.points.find(x => x.name === 'Sun');
   const asc = p.points.find(x => x.name === 'ASC');
   document.getElementById('chartSummary').textContent = p.name + ' · ' + (sun ? signOf(sun.lon) + ' Sun' : '') + (asc ? ' · ' + signOf(asc.lon) + ' Rising' : '');
@@ -1160,7 +1195,7 @@ Today: ${today}
 
 ${S.profile ? S.profile.natalText : ""}
 ${buildTransitBlock()}
-${mode === 'deepdive' && S.deepDive ? '\nTHEIR DEEP DIVE DOCUMENT (readable and downloadable in the app):\n' + S.deepDive : ''}
+${mode === 'deepdive' && (S.deepDives.deep || S.deepDives.story) ? '\nTHEIR DEEP DIVE DOCUMENT (readable and downloadable in the app):\n' + (S.deepDives[S.ddStyle] || S.deepDives.deep || S.deepDives.story) : ''}
 
 YOUR APPROACH:
 — Be specific to this chart. Never give generic horoscope statements.
@@ -1171,6 +1206,7 @@ YOUR APPROACH:
 — One question per response maximum. Make it count.
 — The CURRENT SKY block is calculated and reliable. Beyond it, be honest about approximations — never invent transit data.
 — Match their energy. If they're light, be light. If they're in it, go deep.
+— Respond entirely in ${S.profile && S.profile.lang ? S.profile.lang : 'English'}, unless the person explicitly asks for another language.
 — You are their most knowing mirror — the one who reads the map and asks the questions that matter.
 
 CURRENT MODE: ${modeGuide[mode] || modeGuide.reflect}`;
@@ -1211,7 +1247,15 @@ function init() {
   S.key = localStorage.getItem('cc_key') || '';
   S.profile = getProfile();
   hydrateProfile();
-  S.deepDive = localStorage.getItem('cc_deepdive') || '';
+  S.ddStyle = 'deep';
+  S.deepDives = {
+    deep: localStorage.getItem('cc_dd_deep') || localStorage.getItem('cc_deepdive') || '',
+    story: localStorage.getItem('cc_dd_story') || ''
+  };
+  if (S.profile && S.profile.lang) {
+    const sel = document.getElementById('langSel');
+    if (sel) sel.value = S.profile.lang;
+  }
   if (S.profile && S.key) {
     showApp();
   } else {
@@ -1528,20 +1572,49 @@ function renderJournal() {
   }).join('');
 }
 
-// ─── DEEP DIVE (GENERATED) ───────────────────────────────────────────────────
-const DD_GEN_SYSTEM = 'You are an astrologer-psychologist writing "The Deep Dive" — a deeply personal document for one specific person, derived strictly from their natal chart data. Voice: intimate, precise, calm; psychologically penetrating but never mystifying; no hype, no exclamation marks; second person throughout. ' +
-'Structure the output in markdown exactly like this: a "# The Deep Dive" title; a short italic epigraph line; two intro paragraphs on how to use the document (one section at a time, sit with the questions); a "## The Blind Spots" section with five to seven subsections ("### 1. <Evocative Name>" etc.), each 150-250 words naming one specific psychological blind spot visible in the chart data — ground each one in the actual placements (cite them: signs, houses, tight aspects, dignities, stelliums, the nodal axis) and end each with an italic line beginning "*To sit with:*" holding one piercing question; ' +
-'then a "## The Paradoxes" section with four to six subsections ("### I. <Name>" etc.), each a 100-150 word prose meditation on a genuine tension the chart holds (not problems to solve), each ending with a single italic line that lands quietly; then "## Working With This Document" — one short closing section. ' +
-'Derive everything from the data provided. Tightest aspects and angular planets matter most. Be specific to THESE placements — nothing that could be said to everyone. Honesty over flattery; warmth over softness.';
+// ─── DEEP DIVE (GENERATED, TWO STYLES) ───────────────────────────────────────
+const DD_SYSTEMS = {
+  deep: 'You are an astrologer-psychologist writing "The Deep Dive" — a deeply personal document for one specific person, derived strictly from their natal chart data. Voice: intimate, precise, calm; psychologically penetrating but never mystifying; no hype, no exclamation marks; second person throughout. ' +
+    'Structure the output in markdown exactly like this: a "# The Deep Dive" title; a short italic epigraph line; two intro paragraphs on how to use the document (one section at a time, sit with the questions); a "## The Blind Spots" section with five to seven subsections ("### 1. <Evocative Name>" etc.), each 150-250 words naming one specific psychological blind spot visible in the chart data — ground each one in the actual placements (cite them: signs, houses, tight aspects, dignities, stelliums, the nodal axis) and end each with an italic line beginning "*To sit with:*" holding one piercing question; ' +
+    'then a "## The Paradoxes" section with four to six subsections ("### I. <Name>" etc.), each a 100-150 word prose meditation on a genuine tension the chart holds (not problems to solve), each ending with a single italic line that lands quietly; then "## Working With This Document" — one short closing section. ' +
+    'Derive everything from the data provided. Tightest aspects and angular planets matter most. Be specific to THESE placements — nothing that could be said to everyone. Honesty over flattery; warmth over softness.',
+  story: 'You are a gifted writer with deep astrological knowledge, writing "The Story" — a personal document for one specific person, derived strictly from their natal chart data, but written as flowing literary prose for a reader with zero astrology knowledge. ' +
+    'Rules: almost no astrological terminology — no degrees, no house numbers, no aspect names; at most a rare, gentle mention of a planet as a character in the story. Translate the chart psychology into lived, recognizable inner experience — moments, scenes, patterns the reader will know from the inside. ' +
+    'Voice: warm, intimate, literary, unhurried; no hype, no exclamation marks; second person throughout. ' +
+    'Structure the output in markdown exactly like this: a "# The Story of You" title; a short italic epigraph; then five to seven chapters ("## <Evocative chapter title>" — titles like a novel, never technical), each 150-250 words of continuous prose telling one true pattern, derived from the strongest signatures in the chart data (tightest aspects, angular planets, stelliums, the nodal axis) but never naming the mechanics; each chapter closes with one italic question; then a short final chapter "## Where the story opens" about what is waiting to change. ' +
+    'The reader should feel precisely seen — including the uncomfortable parts. Honesty over flattery; nothing that could be said to everyone.'
+};
+
+const DD_LABELS = {
+  deep:  { gen: 'Write my Deep Dive ✦', file: 'Chart-Compass-Deep-Dive.html', title: 'Chart Compass — The Deep Dive',
+           empty: 'A one-time reading written from your exact chart — your blind spots, your paradoxes, and the questions they ask of you.<br>It takes about a minute to write, and it is yours to keep.' },
+  story: { gen: 'Tell me my story ✦', file: 'Chart-Compass-The-Story.html', title: 'Chart Compass — The Story',
+           empty: 'The same chart, told as a story — no jargon, no technique, just you on the page.<br>For when you want to feel it rather than study it.' }
+};
+
+function setDdStyle(s) {
+  S.ddStyle = s;
+  document.getElementById('pillDeep').classList.toggle('active', s === 'deep');
+  document.getElementById('pillStory').classList.toggle('active', s === 'story');
+  renderDeepDive();
+}
+
+function onLangChange(v) {
+  if (!S.profile) return;
+  S.profile.lang = v;
+  localStorage.setItem('cc_profile', JSON.stringify(S.profile));
+}
 
 async function generateDeepDive() {
+  const style = S.ddStyle;
   const btn = document.getElementById('ddGenBtn');
   const box = document.getElementById('deepDiveContent');
   if (!S.profile) { box.innerHTML = '<p style="text-align:center;color:#e08585;">No chart found — enter your birth data first.</p>'; return; }
   if (!S.key) { box.innerHTML = '<p style="text-align:center;color:#e08585;">No API key found — add it via the sidebar (API Key → Change), then try again.</p>'; return; }
+  const lang = S.profile.lang || 'English';
   btn.disabled = true;
-  btn.textContent = 'Writing your Deep Dive…';
-  box.innerHTML = '<p style="text-align:center;opacity:0.7;">✦ The compass is reading your chart and writing.<br>This takes about a minute — keep this tab open.</p>';
+  btn.textContent = 'Writing…';
+  box.innerHTML = '<p style="text-align:center;opacity:0.7;">✦ The compass is reading your chart and writing, in ' + esc(lang) + '.<br>This takes about a minute — keep this tab open.</p>';
   try {
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -1554,14 +1627,14 @@ async function generateDeepDive() {
       body: JSON.stringify({
         model: 'claude-sonnet-4-6',
         max_tokens: 8000,
-        system: DD_GEN_SYSTEM,
-        messages: [{ role: 'user', content: S.profile.natalText + '\n\nWrite my Deep Dive now.' }]
+        system: DD_SYSTEMS[style] + ' Write the ENTIRE document in ' + lang + ' — headings included. Keep the markdown structure markers (#, ##, ###, *italics*) exactly as specified.',
+        messages: [{ role: 'user', content: S.profile.natalText + '\n\nWrite it now, in ' + lang + '.' }]
       })
     });
     if (!res.ok) { const b = await res.json().catch(() => ({})); throw new Error(b.error && b.error.message || ('HTTP ' + res.status)); }
     const data = await res.json();
-    S.deepDive = data.content[0].text;
-    localStorage.setItem('cc_deepdive', S.deepDive);
+    S.deepDives[style] = data.content[0].text;
+    localStorage.setItem('cc_dd_' + style, S.deepDives[style]);
     renderDeepDive();
   } catch (e) {
     btn.disabled = false;
@@ -1572,7 +1645,8 @@ async function generateDeepDive() {
 }
 
 function ddHtml() {
-  return (S.deepDive || '').trim().split('\n\n').map(b => {
+  const doc = S.deepDives[S.ddStyle] || '';
+  return doc.trim().split('\n\n').map(b => {
     b = b.trim();
     if (b.startsWith('### ')) return '<h4>' + esc(b.slice(4)) + '</h4>';
     if (b.startsWith('## '))  return '<h3>' + esc(b.slice(3)) + '</h3>';
@@ -1589,21 +1663,23 @@ function renderDeepDive() {
   const box = document.getElementById('deepDiveContent');
   const gen = document.getElementById('ddGenBtn');
   const dl  = document.getElementById('ddDlBtn');
-  if (S.deepDive) {
+  const L = DD_LABELS[S.ddStyle];
+  if (S.deepDives[S.ddStyle]) {
     gen.style.display = 'none';
     dl.style.display = 'inline-block';
     box.innerHTML = ddHtml();
   } else {
     gen.style.display = 'inline-block';
     gen.disabled = false;
-    gen.textContent = 'Write my Deep Dive ✦';
+    gen.textContent = L.gen;
     dl.style.display = 'none';
-    box.innerHTML = '<p style="text-align:center;opacity:0.7;">A one-time reading written from your exact chart — your blind spots, your paradoxes, and the questions they ask of you.<br>It takes about a minute to write, and it is yours to keep.</p>';
+    box.innerHTML = '<p style="text-align:center;opacity:0.7;">' + L.empty + '</p>';
   }
 }
 
 function downloadDeepDive() {
-  const html = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Chart Compass — The Deep Dive</title><style>' +
+  const L = DD_LABELS[S.ddStyle];
+  const html = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>' + L.title + '</title><style>' +
     'body{font-family:Georgia,serif;max-width:700px;margin:48px auto;padding:0 24px;line-height:1.75;color:#22222e;background:#fdfcf8}' +
     'h2{font-size:1.7em;line-height:1.25}h3{margin-top:2.2em;border-bottom:1px solid #d8cfc0;padding-bottom:6px}h4{margin-top:1.8em}' +
     'em{color:#5a5a68}@media print{body{margin:12mm auto}}' +
@@ -1611,7 +1687,7 @@ function downloadDeepDive() {
   const blob = new Blob([html], { type: 'text/html' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = 'Chart-Compass-Deep-Dive.html';
+  a.download = L.file;
   a.click();
   URL.revokeObjectURL(a.href);
 }

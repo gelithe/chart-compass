@@ -695,9 +695,10 @@ textarea.input-box::placeholder { color: var(--text-muted); }
     </div>
     <div id="stepKey" style="display:none;">
       <p class="modal-sub" id="chartHello"></p>
-      <input type="password" id="keyInput" placeholder="sk-ant-api03-..." autocomplete="off">
-      <p class="key-note">This trial runs on an Anthropic API key — yours, or one your host shared with you.<br>It stays in this browser only. No server receives it.</p>
-      <button class="btn btn-primary" onclick="onSaveKey()">Open the Compass →</button>
+      <input type="text" id="accessInput" placeholder="Invitation code" autocomplete="off">
+      <p class="key-note" id="accessNote">The code from your invitation — one word, nothing to set up.</p>
+      <button class="btn btn-primary" onclick="onSaveAccess()">Open the Compass →</button>
+      <p class="key-note"><a href="#" id="accessToggle" onclick="toggleAccessMode(); return false;" style="color:inherit;">I have my own API key</a></p>
     </div>
   </div>
 </div>
@@ -760,7 +761,7 @@ textarea.input-box::placeholder { color: var(--text-muted); }
         </select>
       </div>
       <div class="sb-row"><span>Birth Data</span> <button onclick="onResetChart()">Change</button></div>
-      <div class="sb-row"><span>API Key</span>  <button onclick="onResetKey()">Change</button></div>
+      <div class="sb-row"><span>Access</span>  <button onclick="onResetAccess()">Change</button></div>
       <div class="sb-row"><span>Sessions</span> <button onclick="onClearSessions()">Clear all</button></div>
     </div>
   </div>
@@ -1245,7 +1246,12 @@ let S = {
 
 // ─── INIT ────────────────────────────────────────────────────────────────────
 function init() {
-  S.key = localStorage.getItem('cc_key') || '';
+  S.access = null;
+  try { S.access = JSON.parse(localStorage.getItem('cc_access')); } catch (e) {}
+  if (!S.access) {
+    const legacy = localStorage.getItem('cc_key');
+    if (legacy) S.access = { mode: 'key', value: legacy };
+  }
   S.profile = getProfile();
   hydrateProfile();
   S.ddStyle = 'deep';
@@ -1257,7 +1263,7 @@ function init() {
     const sel = document.getElementById('langSel');
     if (sel) sel.value = S.profile.lang;
   }
-  if (S.profile && S.key) {
+  if (S.profile && S.access) {
     showApp();
   } else {
     document.getElementById('setupOverlay').style.display = 'flex';
@@ -1303,24 +1309,66 @@ function showApp() {
   renderSky();
 }
 
-// ─── KEY MANAGEMENT ──────────────────────────────────────────────────────────
-function onSaveKey() {
-  const k = document.getElementById('keyInput').value.trim();
-  if (!k.startsWith('sk-ant-')) {
-    alert('Please enter a valid Anthropic API key (starts with sk-ant-)');
+// ─── ACCESS (INVITATION CODE OR OWN KEY) ─────────────────────────────────────
+const PROXY_URL = 'https://chart-compass-proxy.gelithe.workers.dev';
+let accessMode = 'code';
+
+function toggleAccessMode() {
+  accessMode = accessMode === 'code' ? 'key' : 'code';
+  const inp = document.getElementById('accessInput');
+  inp.type = accessMode === 'code' ? 'text' : 'password';
+  inp.placeholder = accessMode === 'code' ? 'Invitation code' : 'sk-ant-api03-...';
+  inp.value = '';
+  document.getElementById('accessNote').innerHTML = accessMode === 'code'
+    ? 'The code from your invitation — one word, nothing to set up.'
+    : 'Your own Anthropic API key. It stays in this browser only — no server receives it.';
+  document.getElementById('accessToggle').textContent = accessMode === 'code'
+    ? 'I have my own API key' : 'I have an invitation code';
+}
+
+function onSaveAccess() {
+  const v = document.getElementById('accessInput').value.trim();
+  if (!v) { alert(accessMode === 'code' ? 'Please enter your invitation code' : 'Please enter your API key'); return; }
+  if (accessMode === 'key' && !v.startsWith('sk-ant-')) {
+    alert('A valid Anthropic API key starts with sk-ant-');
     return;
   }
-  S.key = k;
-  localStorage.setItem('cc_key', k);
+  S.access = { mode: accessMode, value: v };
+  localStorage.setItem('cc_access', JSON.stringify(S.access));
   showApp();
 }
 
-function onResetKey() {
+function onResetAccess() {
+  localStorage.removeItem('cc_access');
   localStorage.removeItem('cc_key');
-  S.key = '';
-  document.getElementById('keyInput').value = '';
+  S.access = null;
+  document.getElementById('accessInput').value = '';
   document.getElementById('app').style.display = 'none';
   document.getElementById('setupOverlay').style.display = 'flex';
+  document.getElementById('stepBirth').style.display = 'none';
+  document.getElementById('stepKey').style.display = 'block';
+  document.getElementById('chartHello').textContent = 'How will you open the Compass?';
+}
+
+function apiRequest(payload) {
+  const a = S.access || {};
+  if (a.mode === 'code') {
+    return fetch(PROXY_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Trial-Code': a.value },
+      body: JSON.stringify(payload)
+    });
+  }
+  return fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': a.value,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true'
+    },
+    body: JSON.stringify(payload)
+  });
 }
 
 function onClearSessions() {
@@ -1365,7 +1413,7 @@ function autoGrow(el) {
 async function send() {
   const box = document.getElementById('inputBox');
   const text = box.value.trim();
-  if (!text || !S.key) return;
+  if (!text || !S.access) return;
 
   // Remove welcome if present
   const w = document.getElementById('welcome');
@@ -1404,20 +1452,11 @@ async function callAPI() {
   // Keep last 24 messages for context (12 back-and-forth)
   const msgs = S.messages.slice(-24);
 
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': S.key,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true'
-    },
-    body: JSON.stringify({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 1500,
-      system: buildSystem(S.mode),
-      messages: msgs
-    })
+  const res = await apiRequest({
+    model: 'claude-sonnet-4-6',
+    max_tokens: 1500,
+    system: buildSystem(S.mode),
+    messages: msgs
   });
 
   if (!res.ok) {
@@ -1613,26 +1652,17 @@ async function generateDeepDive() {
   const btn = document.getElementById('ddGenBtn');
   const box = document.getElementById('deepDiveContent');
   if (!S.profile) { box.innerHTML = '<p style="text-align:center;color:#e08585;">No chart found — enter your birth data first.</p>'; return; }
-  if (!S.key) { box.innerHTML = '<p style="text-align:center;color:#e08585;">No API key found — add it via the sidebar (API Key → Change), then try again.</p>'; return; }
+  if (!S.access) { box.innerHTML = '<p style="text-align:center;color:#e08585;">No access set — add your invitation code via the sidebar (Access → Change), then try again.</p>'; return; }
   const lang = S.profile.lang || 'English';
   btn.disabled = true;
   btn.textContent = 'Writing…';
   box.innerHTML = '<p style="text-align:center;opacity:0.7;">✦ The compass is reading your chart and writing, in ' + esc(lang) + '.<br>This takes about a minute — keep this tab open.</p>';
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': S.key,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true'
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
-        max_tokens: 8000,
-        system: DD_SYSTEMS[style] + ' Write the ENTIRE document in ' + lang + ' — headings included. Keep the markdown structure markers (#, ##, ###, *italics*) exactly as specified.',
-        messages: [{ role: 'user', content: S.profile.natalText + '\n\nWrite it now, in ' + lang + '.' }]
-      })
+    const res = await apiRequest({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 8000,
+      system: DD_SYSTEMS[style] + ' Write the ENTIRE document in ' + lang + ' — headings included. Keep the markdown structure markers (#, ##, ###, *italics*) exactly as specified.',
+      messages: [{ role: 'user', content: S.profile.natalText + '\n\nWrite it now, in ' + lang + '.' }]
     });
     if (!res.ok) { const b = await res.json().catch(() => ({})); throw new Error(b.error && b.error.message || ('HTTP ' + res.status)); }
     const data = await res.json();
@@ -1644,7 +1674,7 @@ async function generateDeepDive() {
     btn.style.display = 'inline-block';
     btn.textContent = 'Try again';
     box.innerHTML = '<p style="text-align:center;color:#e08585;">Could not generate: ' + esc(e.message || 'unknown error') + '</p>' +
-      '<p style="text-align:center;opacity:0.6;">Common causes: the API key has no credit, or the connection dropped mid-write.</p>';
+      '<p style="text-align:center;opacity:0.6;">Common causes: an invalid or expired invitation code, an API key without credit, or the connection dropped mid-write.</p>';
   }
 }
 

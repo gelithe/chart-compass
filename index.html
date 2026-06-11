@@ -1535,10 +1535,13 @@ const DD_GEN_SYSTEM = 'You are an astrologer-psychologist writing "The Deep Dive
 'Derive everything from the data provided. Tightest aspects and angular planets matter most. Be specific to THESE placements — nothing that could be said to everyone. Honesty over flattery; warmth over softness.';
 
 async function generateDeepDive() {
-  if (!S.key || !S.profile) return;
   const btn = document.getElementById('ddGenBtn');
+  const box = document.getElementById('deepDiveContent');
+  if (!S.profile) { box.innerHTML = '<p style="text-align:center;color:#e08585;">No chart found — enter your birth data first.</p>'; return; }
+  if (!S.key) { box.innerHTML = '<p style="text-align:center;color:#e08585;">No API key found — add it via the sidebar (API Key → Change), then try again.</p>'; return; }
   btn.disabled = true;
-  btn.textContent = 'Writing your Deep Dive… about a minute';
+  btn.textContent = 'Writing your Deep Dive…';
+  box.innerHTML = '<p style="text-align:center;opacity:0.7;">✦ The compass is reading your chart and writing.<br>This takes about a minute — keep this tab open.</p>';
   try {
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -1562,7 +1565,9 @@ async function generateDeepDive() {
     renderDeepDive();
   } catch (e) {
     btn.disabled = false;
-    btn.textContent = 'Failed (' + (e.message || 'error') + ') — try again';
+    btn.textContent = 'Try again';
+    box.innerHTML = '<p style="text-align:center;color:#e08585;">Could not generate: ' + esc(e.message || 'unknown error') + '</p>' +
+      '<p style="text-align:center;opacity:0.6;">Common causes: the API key has no credit, or the connection dropped mid-write.</p>';
   }
 }
 

@@ -640,6 +640,15 @@ textarea.input-box::placeholder { color: var(--text-muted); }
   .sidebar { display: none; }
 }
 
+/* Deep Dive */
+.dd-content { max-width: 660px; margin: 0 auto; padding: 8px 18px 60px; }
+.dd-content h2 { font-size: 1.45rem; color: var(--gold); margin: 26px 0 10px; font-weight: 600; }
+.dd-content h3 { font-size: 1.12rem; color: var(--gold); margin: 30px 0 8px; padding-bottom: 6px; border-bottom: 1px solid rgba(200,170,110,0.25); font-weight: 600; }
+.dd-content h4 { font-size: 1rem; margin: 22px 0 6px; opacity: 0.95; font-weight: 600; }
+.dd-content p { margin: 0 0 14px; line-height: 1.75; opacity: 0.88; }
+.dd-content em { opacity: 0.8; }
+.book-header button { margin-top: 10px; }
+
 /* Onboarding */
 .birth-row { display: flex; gap: 8px; }
 .birth-row input { flex: 1; min-width: 0; }
@@ -705,6 +714,7 @@ textarea.input-box::placeholder { color: var(--text-muted); }
         <button class="mode-btn"        data-mode="celebrate" onclick="setMode(this)"><span class="mode-icon">✦</span>Celebrate</button>
         <button class="mode-btn"        data-mode="transit"   onclick="setMode(this)"><span class="mode-icon">☽</span>Transits</button>
         <button class="mode-btn"        data-mode="milestone" onclick="setMode(this)"><span class="mode-icon">△</span>Milestone</button>
+        <button class="mode-btn"        data-mode="deepdive"  onclick="setMode(this)"><span class="mode-icon">◈</span>Deep Dive</button>
       </div>
     </div>
 
@@ -736,6 +746,7 @@ textarea.input-box::placeholder { color: var(--text-muted); }
       <div class="tab active" onclick="switchTab('compass', this)">Compass</div>
       <div class="tab"        onclick="switchTab('journal', this)">Journal</div>
       <div class="tab"        onclick="switchTab('book',    this)">The Book</div>
+      <div class="tab"        onclick="switchTab(\'deepdive\', this)">Deep Dive</div>
     </div>
 
     <!-- COMPASS -->
@@ -787,6 +798,18 @@ textarea.input-box::placeholder { color: var(--text-muted); }
       </div>
     </div>
 
+    <!-- DEEP DIVE -->
+    <div class="tab-pane" id="pane-deepdive">
+      <div class="book-wrap">
+        <div class="book-header">
+          <h3>The Deep Dive</h3>
+          <p>Your blind spots and paradoxes — written from your chart, for you alone.</p>
+          <button class="btn btn-primary" id="ddGenBtn" onclick="generateDeepDive()" style="display:none;">Write my Deep Dive ✦</button>
+          <button class="btn btn-ghost" id="ddDlBtn" onclick="downloadDeepDive()" style="display:none;">Download ↓</button>
+        </div>
+        <div id="deepDiveContent" class="dd-content"></div>
+      </div>
+    </div>
 
   </div>
 </div>
@@ -978,6 +1001,7 @@ function onCityInput() {
 function onResetChart() {
   if (!confirm('Replace the birth data? The current chart will be cleared.')) return;
   localStorage.removeItem('cc_profile');
+  localStorage.removeItem('cc_deepdive');
   location.reload();
 }
 
@@ -1125,7 +1149,9 @@ function buildSystem(mode) {
     transit:
       'The person wants to understand the current astrological weather relative to their chart. Today is ' + today + '. A CURRENT SKY section with live-computed planetary positions and their exact aspects to this natal chart is included above — ground your interpretation in that data. Prioritize the major slow-planet transits — Pluto, Saturn, Neptune, Uranus — as these are most consequential.',
     milestone:
-      'The person is marking an important moment. Help them locate this event in their larger chart story. What chapter does it open or close? What house or archetype does it activate? What does it mean for their path?'
+      'The person is marking an important moment. Help them locate this event in their larger chart story. What chapter does it open or close? What house or archetype does it activate? What does it mean for their path?',
+    deepdive:
+      'The person is working through their Deep Dive document — the blind spots and paradoxes generated from their chart. If the document exists it is included below the natal data: guide them through it one section at a time, ask which section is alive right now, and hold them inside its closing question rather than rushing past it. Never summarize the whole document — go deep on one thread. Watch for the bypass: fluent agreement and fast insight are exits, not arrivals. If no document is included, invite them to open the Deep Dive tab and generate it first.'
   };
 
   return `You are the personal astrological companion for a specific person. You hold intimate, precise knowledge of their natal chart — not as abstract symbols but as a living map of their psyche, potential, and path.
@@ -1134,6 +1160,7 @@ Today: ${today}
 
 ${S.profile ? S.profile.natalText : ""}
 ${buildTransitBlock()}
+${mode === 'deepdive' && S.deepDive ? '\nTHEIR DEEP DIVE DOCUMENT (readable and downloadable in the app):\n' + S.deepDive : ''}
 
 YOUR APPROACH:
 — Be specific to this chart. Never give generic horoscope statements.
@@ -1156,7 +1183,8 @@ const STARTERS = {
   doubt:      ['I’m questioning whether…', 'I feel like I’ve been going in circles around…', 'I don’t know if I’m doing the right thing with…', 'What if I’m wrong about…'],
   celebrate:  ['Something good happened…', 'I finally did the thing I was afraid of…', 'I got the result I worked for…', 'I surprised myself today…'],
   transit:    ['What’s happening astrologically for me right now?', 'What major transits should I know about?', 'Is this a good time for a big change?', 'What’s the energy of this period for my chart?'],
-  milestone:  ['I want to mark this moment…', 'Something big just shifted…', 'I’m at a threshold I can feel…', 'This chapter is closing / opening…']
+  milestone:  ['I want to mark this moment…', 'Something big just shifted…', 'I’m at a threshold I can feel…', 'This chapter is closing / opening…'],
+  deepdive:   ['Which blind spot is most active in me right now?', 'Walk me through my first blind spot…', 'Give me one paradox to sit with today…', 'Where am I bypassing instead of feeling?']
 };
 
 const PLACEHOLDERS = {
@@ -1165,7 +1193,8 @@ const PLACEHOLDERS = {
   doubt:      'What are you wrestling with?',
   celebrate:  'What happened? Tell me.',
   transit:    'Ask about current planetary weather…',
-  milestone:  'Describe this moment to remember…'
+  milestone:  'Describe this moment to remember…',
+  deepdive:   'Which pattern do you want to look at?'
 };
 
 // ─── STATE ───────────────────────────────────────────────────────────────────
@@ -1182,6 +1211,7 @@ function init() {
   S.key = localStorage.getItem('cc_key') || '';
   S.profile = getProfile();
   hydrateProfile();
+  S.deepDive = localStorage.getItem('cc_deepdive') || '';
   if (S.profile && S.key) {
     showApp();
   } else {
@@ -1199,6 +1229,7 @@ function init() {
   renderStarters();
   renderNatal();
   renderSky();
+  renderDeepDive();
   renderJournal();
   renderBook();
 }
@@ -1495,6 +1526,89 @@ function renderJournal() {
         <div class="j-text">${esc(e.content)}</div>
       </div>`;
   }).join('');
+}
+
+// ─── DEEP DIVE (GENERATED) ───────────────────────────────────────────────────
+const DD_GEN_SYSTEM = 'You are an astrologer-psychologist writing "The Deep Dive" — a deeply personal document for one specific person, derived strictly from their natal chart data. Voice: intimate, precise, calm; psychologically penetrating but never mystifying; no hype, no exclamation marks; second person throughout. ' +
+'Structure the output in markdown exactly like this: a "# The Deep Dive" title; a short italic epigraph line; two intro paragraphs on how to use the document (one section at a time, sit with the questions); a "## The Blind Spots" section with five to seven subsections ("### 1. <Evocative Name>" etc.), each 150-250 words naming one specific psychological blind spot visible in the chart data — ground each one in the actual placements (cite them: signs, houses, tight aspects, dignities, stelliums, the nodal axis) and end each with an italic line beginning "*To sit with:*" holding one piercing question; ' +
+'then a "## The Paradoxes" section with four to six subsections ("### I. <Name>" etc.), each a 100-150 word prose meditation on a genuine tension the chart holds (not problems to solve), each ending with a single italic line that lands quietly; then "## Working With This Document" — one short closing section. ' +
+'Derive everything from the data provided. Tightest aspects and angular planets matter most. Be specific to THESE placements — nothing that could be said to everyone. Honesty over flattery; warmth over softness.';
+
+async function generateDeepDive() {
+  if (!S.key || !S.profile) return;
+  const btn = document.getElementById('ddGenBtn');
+  btn.disabled = true;
+  btn.textContent = 'Writing your Deep Dive… about a minute';
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': S.key,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 8000,
+        system: DD_GEN_SYSTEM,
+        messages: [{ role: 'user', content: S.profile.natalText + '\n\nWrite my Deep Dive now.' }]
+      })
+    });
+    if (!res.ok) { const b = await res.json().catch(() => ({})); throw new Error(b.error && b.error.message || ('HTTP ' + res.status)); }
+    const data = await res.json();
+    S.deepDive = data.content[0].text;
+    localStorage.setItem('cc_deepdive', S.deepDive);
+    renderDeepDive();
+  } catch (e) {
+    btn.disabled = false;
+    btn.textContent = 'Failed (' + (e.message || 'error') + ') — try again';
+  }
+}
+
+function ddHtml() {
+  return (S.deepDive || '').trim().split('\n\n').map(b => {
+    b = b.trim();
+    if (b.startsWith('### ')) return '<h4>' + esc(b.slice(4)) + '</h4>';
+    if (b.startsWith('## '))  return '<h3>' + esc(b.slice(3)) + '</h3>';
+    if (b.startsWith('# '))   return '<h2>' + esc(b.slice(2)) + '</h2>';
+    const inner = esc(b)
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.+?)\*/g, '<em>$1</em>')
+      .replace(/\n/g, '<br>');
+    return '<p>' + inner + '</p>';
+  }).join('');
+}
+
+function renderDeepDive() {
+  const box = document.getElementById('deepDiveContent');
+  const gen = document.getElementById('ddGenBtn');
+  const dl  = document.getElementById('ddDlBtn');
+  if (S.deepDive) {
+    gen.style.display = 'none';
+    dl.style.display = 'inline-block';
+    box.innerHTML = ddHtml();
+  } else {
+    gen.style.display = 'inline-block';
+    gen.disabled = false;
+    gen.textContent = 'Write my Deep Dive ✦';
+    dl.style.display = 'none';
+    box.innerHTML = '<p style="text-align:center;opacity:0.7;">A one-time reading written from your exact chart — your blind spots, your paradoxes, and the questions they ask of you.<br>It takes about a minute to write, and it is yours to keep.</p>';
+  }
+}
+
+function downloadDeepDive() {
+  const html = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Chart Compass — The Deep Dive</title><style>' +
+    'body{font-family:Georgia,serif;max-width:700px;margin:48px auto;padding:0 24px;line-height:1.75;color:#22222e;background:#fdfcf8}' +
+    'h2{font-size:1.7em;line-height:1.25}h3{margin-top:2.2em;border-bottom:1px solid #d8cfc0;padding-bottom:6px}h4{margin-top:1.8em}' +
+    'em{color:#5a5a68}@media print{body{margin:12mm auto}}' +
+    '</style></head><body>' + ddHtml() + '</body></html>';
+  const blob = new Blob([html], { type: 'text/html' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'Chart-Compass-Deep-Dive.html';
+  a.click();
+  URL.revokeObjectURL(a.href);
 }
 
 // ─── TABS ────────────────────────────────────────────────────────────────────

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Chart Compass · Your Astrological Guide</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Lato:ital,wght@0,300;0,400;0,700;1,300;1,400&display=swap" rel="stylesheet">
@@ -211,6 +211,18 @@ header {
   border: 1px solid var(--border);
   border-radius: 20px;
 }
+
+/* MOBILE MENU BUTTON + DRAWER BACKDROP (activated in the responsive block) */
+.menu-btn {
+  display: none;
+  width: 38px; height: 38px;
+  align-items: center; justify-content: center;
+  background: none; border: 1px solid var(--border);
+  border-radius: 9px; color: var(--gold); cursor: pointer;
+  font-size: 1.15rem; flex-shrink: 0; padding: 0;
+}
+.sb-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 900; }
+.sb-backdrop.open { display: block; }
 
 /* SIDEBAR */
 .sidebar {
@@ -636,8 +648,56 @@ textarea.input-box::placeholder { color: var(--text-muted); }
 
 /* RESPONSIVE */
 @media (max-width: 680px) {
-  .app { grid-template-columns: 1fr; }
-  .sidebar { display: none; }
+  .app {
+    grid-template-columns: 1fr;
+    grid-template-rows: 54px 1fr;
+    height: 100vh;
+    height: 100dvh;
+  }
+
+  /* Header compacts; menu button replaces the orb */
+  header { padding: 0 12px; }
+  .menu-btn { display: flex; }
+  .h-orb { display: none; }
+  .h-left { gap: 10px; }
+  .h-title { font-size: 0.82rem; }
+  .h-sub { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 46vw; }
+  .date-chip { display: none; }
+  .h-right .btn { font-size: 0.72rem; padding: 6px 11px; }
+
+  /* Sidebar becomes a slide-in drawer */
+  .sidebar {
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
+    width: 84%;
+    max-width: 330px;
+    z-index: 910;
+    transform: translateX(-100%);
+    transition: transform 0.28s ease;
+    box-shadow: 2px 0 28px rgba(0,0,0,0.45);
+  }
+  .sidebar.open { transform: translateX(0); }
+
+  /* Tabs scroll horizontally instead of crowding */
+  .tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tab { padding: 12px 15px; font-size: 0.8rem; white-space: nowrap; }
+
+  /* Roomier touch targets, tighter gutters */
+  .convo { padding: 18px 15px; }
+  .welcome p { max-width: 88%; }
+  .starters { padding: 0 15px 12px; }
+  .input-area { padding: 12px 14px calc(12px + env(safe-area-inset-bottom)); }
+  .dd-content { padding: 8px 16px 90px; }
+  .dd-content h2 { font-size: 1.3rem; }
+  .dd-content h3 { font-size: 1.05rem; }
+  .journal-wrap { padding: 18px 16px; }
+  .book-wrap { padding: 18px 16px; }
+  .modal { padding: 32px 22px; }
+
+  /* 16px on text inputs stops iOS from zoom-jumping on focus */
+  textarea.input-box, .modal input[type="text"], .modal input[type="password"],
+  .modal select, .j-textarea { font-size: 16px; }
 }
 
 /* Language + Deep Dive toggle */
@@ -708,6 +768,7 @@ textarea.input-box::placeholder { color: var(--text-muted); }
 
   <header>
     <div class="h-left">
+      <button class="menu-btn" onclick="toggleSidebar()" aria-label="Open menu">☰</button>
       <div class="h-orb">✦</div>
       <div>
         <div class="h-title">Chart Compass</div>
@@ -721,7 +782,7 @@ textarea.input-box::placeholder { color: var(--text-muted); }
   </header>
 
   <!-- SIDEBAR -->
-  <div class="sidebar">
+  <div class="sidebar" id="sidebar">
     <div class="sb-section">
       <div class="sb-label">Mode</div>
       <div class="mode-grid">
@@ -765,6 +826,7 @@ textarea.input-box::placeholder { color: var(--text-muted); }
       <div class="sb-row"><span>Sessions</span> <button onclick="onClearSessions()">Clear all</button></div>
     </div>
   </div>
+  <div class="sb-backdrop" id="sbBackdrop" onclick="closeSidebar()"></div>
 
   <!-- MAIN -->
   <div class="main">
@@ -782,7 +844,7 @@ textarea.input-box::placeholder { color: var(--text-muted); }
         <div class="welcome" id="welcome">
           <div class="welcome-orb">✦</div>
           <h3>What brings you here today?</h3>
-          <p>Choose a mode on the left, pick a prompt below, or just start typing. This is your space.</p>
+          <p>Pick a mode from the menu, choose a prompt below, or just start typing. This is your space.</p>
         </div>
       </div>
       <div class="starters" id="starters"></div>
@@ -1384,6 +1446,7 @@ function setMode(btn) {
   S.mode = btn.dataset.mode;
   renderStarters();
   document.getElementById('inputBox').placeholder = PLACEHOLDERS[S.mode] || 'Say anything…';
+  closeSidebar();
 }
 
 function renderStarters() {
@@ -1533,7 +1596,7 @@ function newSession() {
     `<div class="welcome" id="welcome">
        <div class="welcome-orb">✦</div>
        <h3>What brings you here today?</h3>
-       <p>Choose a mode on the left, pick a prompt below, or just start typing. This is your space.</p>
+       <p>Pick a mode from the menu, choose a prompt below, or just start typing. This is your space.</p>
      </div>`;
 }
 
@@ -1737,6 +1800,17 @@ function downloadDeepDive() {
 }
 
 // ─── TABS ────────────────────────────────────────────────────────────────────
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('sbBackdrop').classList.toggle('open');
+}
+function closeSidebar() {
+  const sb = document.getElementById('sidebar');
+  if (sb) sb.classList.remove('open');
+  const bd = document.getElementById('sbBackdrop');
+  if (bd) bd.classList.remove('open');
+}
+
 function switchTab(id, el) {
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
